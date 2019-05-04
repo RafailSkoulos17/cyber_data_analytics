@@ -15,7 +15,9 @@ from sklearn.metrics import confusion_matrix
 from operator import itemgetter
 from itertools import groupby
 import numpy as np
-from seaborn import pairplot
+import seaborn as sns
+import pandas as pd
+import random
 
 
 # In[8]:
@@ -25,6 +27,19 @@ def string_to_timestamp(date_string):#convert time string to float value
     time_stamp = time.strptime(date_string, '%Y-%m-%d %H:%M:%S')
     return time.mktime(time_stamp)
 
+
+def visualise_heatmap(data, labels):
+    to_plot = [data[ind] for ind, y in enumerate(labels) if y]
+    print(len(to_plot))
+    to_plot += random.sample([data[ind] for ind, y in enumerate(labels) if not y], len(to_plot))
+    print(len(to_plot))
+    df = pd.DataFrame(to_plot)
+    df.columns = ['issuercountry', 'txvariantcode', 'issuer_id', 'amount', 'currencycode',
+                    'shoppercountry', 'interaction', 'verification', 'cvcresponse', 'creationdate_stamp',
+                     'accountcode', 'mail_id', 'ip_id', 'card_id']
+    df.drop('creationdate_stamp', axis=1, inplace=True)
+    ax = sns.heatmap(df)
+    plt.show(ax)
 
 # In[9]:
 
@@ -103,6 +118,7 @@ if __name__ == "__main__":
     y = []#contains labels
     data = []
     color = []
+    coversion_dict = {'SEK': 0.09703, 'MXN': 0.04358, 'AUD': 0.63161, 'NZD': 0.58377, 'GBP': 1.13355}
     (issuercountry_set, txvariantcode_set, currencycode_set, shoppercountry_set, interaction_set,
     verification_set, accountcode_set, mail_id_set, ip_id_set, card_id_set) = [set() for _ in range(10)]
     (issuercountry_dict, txvariantcode_dict, currencycode_dict, shoppercountry_dict, interaction_dict,
@@ -124,6 +140,7 @@ if __name__ == "__main__":
         amount = float(line_ah.strip().split(',')[5])#transaction amount in minor units
         currencycode = line_ah.strip().split(',')[6]
         currencycode_set.add(currencycode)
+        amount = coversion_dict[currencycode]*amount # currency conversion
         shoppercountry = line_ah.strip().split(',')[7]#country code
         shoppercountry_set.add(shoppercountry)
         interaction = line_ah.strip().split(',')[8]#online transaction or subscription
@@ -134,8 +151,8 @@ if __name__ == "__main__":
             label = 0#label save
         verification = line_ah.strip().split(',')[10]#shopper provide CVC code or not
         verification_set.add(verification)
-        cvcresponse = line_ah.strip().split(',')[11]#0 = Unknown, 1=Match, 2=No Match, 3-6=Not checked
-        if int(cvcresponse) > 2:
+        cvcresponse = int(line_ah.strip().split(',')[11])#0 = Unknown, 1=Match, 2=No Match, 3-6=Not checked
+        if cvcresponse > 2:
             cvcresponse = 3
         year_info = datetime.datetime.strptime(line_ah.strip().split(',')[12],'%Y-%m-%d %H:%M:%S').year
         month_info = datetime.datetime.strptime(line_ah.strip().split(',')[12],'%Y-%m-%d %H:%M:%S').month
@@ -157,28 +174,28 @@ if __name__ == "__main__":
     data = sorted(data, key = lambda k: k[-1])
     day_aggregate = aggregate(data,'day')
     client_aggregate = aggregate(data,'client')
-    transaction_num_day = []
-    for item in day_aggregate:
-        transaction_num_day.append(len(item))
-    plt.figure(1)
-    plt.plot(transaction_num_day, color = 'c', linewidth = 2)
-    plt.plot()
-    plt.text(2,0.0,'Date: 2015-10-8')
-    plt.xlabel('Date')
-    plt.ylabel('Number of Transactions')
-    plt.xlim([0,125])
-    plt.axis('tight')
-    plt.savefig('Day Aggregating.png')
-    transaction_num_client = []
-    for item in client_aggregate:
-        transaction_num_client.append(len(item))
-    plt.figure(2)
-    plt.plot(transaction_num_client, color = 'c', linewidth = 2)
-    #plt.text(99,9668,'Date: 2015-10-8')
-    plt.xlabel('Client ID')
-    plt.ylabel('Number of Transactions')
-    plt.axis('tight')
-    plt.savefig('Client Aggregating.png')
+    # transaction_num_day = []
+    # for item in day_aggregate:
+    #     transaction_num_day.append(len(item))
+    # plt.figure(1)
+    # plt.plot(transaction_num_day, color = 'c', linewidth = 2)
+    # plt.plot()
+    # plt.text(2,0.0,'Date: 2015-10-8')
+    # plt.xlabel('Date')
+    # plt.ylabel('Number of Transactions')
+    # plt.xlim([0,125])
+    # plt.axis('tight')
+    # plt.savefig('Day Aggregating.png')
+    # transaction_num_client = []
+    # for item in client_aggregate:
+    #     transaction_num_client.append(len(item))
+    # plt.figure(2)
+    # plt.plot(transaction_num_client, color = 'c', linewidth = 2)
+    # #plt.text(99,9668,'Date: 2015-10-8')
+    # plt.xlabel('Client ID')
+    # plt.ylabel('Number of Transactions')
+    # plt.axis('tight')
+    # plt.savefig('Client Aggregating.png')
 
 
 # In[17]:
@@ -192,6 +209,7 @@ for item in list(issuercountry_set):
     issuercountry_dict[item] = list(issuercountry_set).index(item)
 for item in list(txvariantcode_set):
     txvariantcode_dict[item] = list(txvariantcode_set).index(item)
+print(currencycode_set)
 for item in list(currencycode_set):
     currencycode_dict[item] = list(currencycode_set).index(item)
 for item in list(shoppercountry_set):
@@ -217,7 +235,8 @@ for item in x:
 
 #x_mean = []
 #x_mean = aggregate_mean(x);
-x_mean = x;
+visualise_heatmap(x, y)
+x_mean = x
 des = 'original_data.csv'
 des1 = 'aggregate_data.csv'
 ch_dfa = open(des,'w')
