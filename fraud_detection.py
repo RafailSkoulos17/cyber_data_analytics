@@ -1,8 +1,3 @@
-# coding: utf-8
-
-# In[7]:
-
-
 import datetime
 import time
 import matplotlib.pyplot as plt
@@ -10,17 +5,15 @@ from sklearn import neighbors, svm
 from sklearn.decomposition import PCA
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import classification_report
+from sklearn.metrics import precision_recall_curve, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV
-from sklearn.metrics import confusion_matrix
 from operator import itemgetter
 from itertools import groupby
 import numpy as np
 import seaborn as sns
+from seaborn import pairplot
 import pandas as pd
 import random
-from seaborn import pairplot
 from collections import Counter
 from imblearn.over_sampling import SMOTE, ADASYN
 from imblearn.under_sampling import TomekLinks, EditedNearestNeighbours
@@ -29,9 +22,8 @@ from imblearn.ensemble import BalancedRandomForestClassifier
 import sklearn.metrics as metrics
 from scipy.stats import randint as sp_randint
 from imblearn.pipeline import Pipeline
-
-# In[8]:
-from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import SelectKBest, chi2, f_classif
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 
 def plot_roc(fpr, tpr, roc_auc):
@@ -55,15 +47,20 @@ def string_to_timestamp(date_string):  # convert time string to float value
 def visualise_heatmap(data, labels):
     to_plot = [data[ind] for ind, y in enumerate(labels) if y]
     print(len(to_plot))
-    to_plot += random.sample([data[ind] for ind, y in enumerate(labels) if not y], len(to_plot))
+    to_plot += random.sample([data[ind] for ind, y in enumerate(labels) if not y], 3*len(to_plot))
     print(len(to_plot))
+    # to_plot += [data[ind] for ind, y in enumerate(labels) if not y]
+    # print(len(to_plot))
     df = pd.DataFrame(to_plot)
+    min_max_scaler = MinMaxScaler()
+    df = pd.DataFrame(min_max_scaler.fit_transform(df.values))
     df.columns = ['issuercountry', 'txvariantcode', 'issuer_id', 'amount', 'currencycode',
-                  'shoppercountry', 'interaction', 'verification', 'cvcresponse', 'creationdate_stamp',
-                  'accountcode', 'mail_id', 'ip_id', 'card_id']
-    df.drop('creationdate_stamp', axis=1, inplace=True)
-    ax = sns.heatmap(df)
-    plt.show()
+                    'shoppercountry', 'interaction', 'verification', 'cvcresponse', 'creationdate_stamp',
+                     'accountcode', 'mail_id', 'ip_id', 'card_id']
+    # df.drop('creationdate_stamp', axis=1, inplace=True)
+    sns.heatmap(df)
+    plt.savefig('Heatmap_Features.png')
+    print('heatmap created')
 
 
 def visualise_pair_plot(data, labels):
@@ -79,9 +76,6 @@ def visualise_pair_plot(data, labels):
     df['label'] = labels
     ax = pairplot(df, vars=cols, hue='label', markers=['.', 'x'])
     plt.show()
-
-
-# In[9]:
 
 
 def aggregate(before_aggregate, aggregate_feature):
@@ -117,9 +111,6 @@ def aggregate(before_aggregate, aggregate_feature):
     return after_aggregate
 
 
-# In[10]:
-
-
 def aggregate_mean(before_aggregate):
     # print before_aggregate[0]
     if True:
@@ -149,9 +140,6 @@ def aggregate_mean(before_aggregate):
     return after_aggregate
 
 
-# In[16]:
-
-
 if __name__ == "__main__":
     src = 'data_for_student_case.csv'
     ah = open(src, 'r')
@@ -159,7 +147,7 @@ if __name__ == "__main__":
     y = []  # contains labels
     data = []
     color = []
-    coversion_dict = {'SEK': 0.09703, 'MXN': 0.04358, 'AUD': 0.63161, 'NZD': 0.58377, 'GBP': 1.13355}
+    conversion_dict = {'SEK': 0.09703, 'MXN': 0.04358, 'AUD': 0.63161, 'NZD': 0.58377, 'GBP': 1.13355}
     (issuercountry_set, txvariantcode_set, currencycode_set, shoppercountry_set, interaction_set,
      verification_set, accountcode_set, mail_id_set, ip_id_set, card_id_set) = [set() for _ in range(10)]
     (issuercountry_dict, txvariantcode_dict, currencycode_dict, shoppercountry_dict, interaction_dict,
@@ -168,8 +156,7 @@ if __name__ == "__main__":
     # cvcresponse_set = set()
     ah.readline()  # skip first line
     for line_ah in ah:
-        if line_ah.strip().split(',')[
-            9] == 'Refused':  # remove the row with 'refused' label, since it's uncertain about fraud
+        if line_ah.strip().split(',')[9] == 'Refused':  # remove the row with 'refused' label, since it's uncertain about fraud
             continue
         if 'na' in str(line_ah.strip().split(',')[14]).lower() or 'na' in str(line_ah.strip().split(',')[4].lower()):
             continue
@@ -182,7 +169,7 @@ if __name__ == "__main__":
         amount = float(line_ah.strip().split(',')[5])  # transaction amount in minor units
         currencycode = line_ah.strip().split(',')[6]
         currencycode_set.add(currencycode)
-        amount = coversion_dict[currencycode] * amount  # currency conversion
+        amount = conversion_dict[currencycode] * amount  # currency conversion
         shoppercountry = line_ah.strip().split(',')[7]  # country code
         shoppercountry_set.add(shoppercountry)
         interaction = line_ah.strip().split(',')[8]  # online transaction or subscription
@@ -239,8 +226,6 @@ if __name__ == "__main__":
     # plt.axis('tight')
     # plt.savefig('Client Aggregating.png')
 
-# In[17]:
-
 
 for item in data:  # split data into x,y
     x.append(item[0:-2])
@@ -250,7 +235,6 @@ for item in list(issuercountry_set):
     issuercountry_dict[item] = list(issuercountry_set).index(item)
 for item in list(txvariantcode_set):
     txvariantcode_dict[item] = list(txvariantcode_set).index(item)
-print(currencycode_set)
 for item in list(currencycode_set):
     currencycode_dict[item] = list(currencycode_set).index(item)
 for item in list(shoppercountry_set):
@@ -284,7 +268,8 @@ des1 = 'aggregate_data.csv'
 ch_dfa = open(des, 'w')
 
 ch_dfa.write(
-    'issuercountry, txvariantcode, issuer_id, amount, currencycode,shoppercountry, interaction, verification, cvcresponse, creationdate_stamp, accountcode, mail_id, ip_id, card_id, label')
+    'issuercountry, txvariantcode, issuer_id, amount, currencycode,shoppercountry, interaction, '
+    'verification, cvcresponse, creationdate_stamp, accountcode, mail_id, ip_id, card_id, label')
 ch_dfa.write('\n')
 
 # ch_dfa.write('txid,bookingdate,issuercountrycode,txvariantcode,bin,amount,'+
@@ -303,7 +288,8 @@ for i in range(len(x_mean)):
     ch_dfa.flush()
 
 x_array = np.array(x)
-x_array = np.delete(x_array, [0, 1, 2, 3, 5, 6, 7, 9, 11, 13], 1)
+# x_array = np.delete(x_array, [0, 1, 2, 3, 5, 6, 7, 9, 11, 13], 1)
+x_array = SelectKBest(chi2, k=4).fit_transform(x_array, y)
 y_array = np.array(y)
 
 # pca = PCA(n_components='mle', svd_solver='full')
@@ -330,9 +316,9 @@ for train_index, test_index in skf.split(usx, usy):
     # x_train, y_train = sm.fit_resample(x_train, y_train)
     # print('Resampled dataset shape %s' % Counter(y_train))
 
-    # ad = ADASYN(n_neighbors=50, n_jobs=-1)
-    # x_train, y_train = ad.fit_resample(x_train, y_train)
-    # print('Resampled dataset shape %s' % Counter(y_train))
+    ad = ADASYN(n_neighbors=50)
+    x_train, y_train = ad.fit_resample(x_train, y_train)
+    print('Resampled dataset shape %s' % Counter(y_train))
 
     # en = EditedNearestNeighbours(n_neighbors=3, n_jobs=-1)
     # x_train, y_train = en.fit_resample(x_train, y_train)
@@ -348,14 +334,14 @@ for train_index, test_index in skf.split(usx, usy):
 
     # clf = neighbors.KNeighborsClassifier(algorithm='kd_tree', n_jobs=-1)
     # clf = neighbors.KNeighborsClassifier(algorithm='auto', weights='distance', n_jobs=-1)
-    # clf = RandomForestClassifier( n_estimators=100, n_jobs=-1)
-    # clf = BalancedRandomForestClassifier(n_estimators=100, n_jobs=-1)
+    clf = RandomForestClassifier(n_estimators=50, warm_start=True)
+    # clf = BalancedRandomForestClassifier(n_estimators=50, n_jobs=-1)
     # clf = AdaBoostClassifier()
-    scaler = StandardScaler().fit(x_train)
-    x_train = scaler.transform(x_train)
-    x_test = scaler.transform(x_test)
-    clf = svm.SVC(kernel='linear', class_weight='balanced')
-
+    # scaler = StandardScaler().fit(x_train)
+    # scaler = MinMaxScaler().fit(x_train)
+    # x_train = scaler.transform(x_train)
+    # x_test = scaler.transform(x_test)
+    # clf = svm.SVC(kernel='linear', class_weight='balanced')
 
     clf.fit(x_train, y_train)
     y_predict = clf.predict(x_test)
@@ -383,16 +369,16 @@ for train_index, test_index in skf.split(usx, usy):
     totalTN += TN
     totalTP += TP
     # print confusion_matrix(y_test, answear) watch out the element in confusion matrix
-    precision, recall, thresholds = precision_recall_curve(y_test, y_predict)
-    predict_proba = clf.predict_proba(x_test)  # the probability of each smple labelled to positive or negative
+    # precision, recall, thresholds = precision_recall_curve(y_test, y_predict)
+    # predict_proba = clf.predict_proba(x_test)  # the probability of each sample labeled to positive or negative
 
 print('TOTAL TP: ' + str(totalTP))
 print('TOTAL FP: ' + str(totalFP))
 print('TOTAL FN: ' + str(totalFN))
 print('TOTAL TN: ' + str(totalTN))
 
-total_y_test = np.array(total_y_test)
-total_y_pred = np.array(total_y_pred)
-fpr, tpr, threshold = metrics.roc_curve(total_y_test, total_y_pred)
-roc_auc = metrics.auc(fpr, tpr)
-plot_roc(fpr, tpr, roc_auc)
+# total_y_test = np.array(total_y_test)
+# total_y_pred = np.array(total_y_pred)
+# fpr, tpr, threshold = metrics.roc_curve(total_y_test, total_y_pred)
+# roc_auc = metrics.auc(fpr, tpr)
+# plot_roc(fpr, tpr, roc_auc)
