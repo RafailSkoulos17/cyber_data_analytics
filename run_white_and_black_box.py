@@ -32,7 +32,7 @@ def plot_decision_tree(clf):
 
 
 def make_clf(usx, usy, clf, clf_name, sampling, normalize=False):
-    print('----------{}----------'.format(clf_name))
+    print('----------{} with {}----------'.format(clf_name, sampling))
     totalTP, totalFP, totalFN, totalTN = 0, 0, 0, 0
     plot_ind = randint(0, 9)
     j = 0
@@ -42,17 +42,17 @@ def make_clf(usx, usy, clf, clf_name, sampling, normalize=False):
         y_train, y_test = usy[train_index], usy[test_index]
 
         if sampling == 'SMOTE':
-            x_train, y_train = SMOTE(sampling_strategy=0.6).fit_resample(x_train, y_train)
+            x_train, y_train = SMOTE(sampling_strategy=0.3).fit_resample(x_train, y_train)
         elif sampling == 'ADASYN':
-            x_train, y_train = ADASYN(sampling_strategy=0.6).fit_resample(x_train, y_train)
+            x_train, y_train = ADASYN(sampling_strategy=0.3).fit_resample(x_train, y_train)
         elif sampling == 'ENN':
             x_train, y_train = EditedNearestNeighbours().fit_resample(x_train, y_train)
         elif sampling == 'Tomek':
             x_train, y_train = TomekLinks().fit_resample(x_train, y_train)
         elif sampling == 'SMOTETomek':
-            x_train, y_train = SMOTETomek(sampling_strategy=0.6).fit_resample(x_train, y_train)
+            x_train, y_train = SMOTETomek(sampling_strategy=0.3).fit_resample(x_train, y_train)
         elif sampling == 'SMOTEENN':
-            x_train, y_train = SMOTEENN(sampling_strategy=0.5).fit_resample(x_train, y_train)
+            x_train, y_train = SMOTEENN(sampling_strategy=0.3).fit_resample(x_train, y_train)
         elif sampling == 'NCR':
             x_train, y_train = NeighbourhoodCleaningRule().fit_resample(x_train, y_train)
         elif sampling == 'OSS':
@@ -65,8 +65,8 @@ def make_clf(usx, usy, clf, clf_name, sampling, normalize=False):
 
         clf.fit(x_train, y_train)
 
-        if plot_ind == j and clf_name == 'DecisionTreeClassifier':
-            plot_decision_tree(clf)
+        # if plot_ind == j and clf_name == 'DecisionTreeClassifier':
+        #     plot_decision_tree(clf)
 
         y_predict = clf.predict(x_test)
 
@@ -96,10 +96,11 @@ if __name__ == "__main__":
     x = np.delete(x, [1, 2, 3, 6, 7, 9, 11, 13], 1)
 
     clfs = {'DecisionTreeClassifier': DecisionTreeClassifier(criterion='entropy', class_weight='balanced')
-            , 'RandomForestClassifier': RandomForestClassifier(n_estimators=75, criterion='entropy',
+            , 'RandomForestClassifier': RandomForestClassifier(n_estimators=50, criterion='entropy',
                                                                class_weight='balanced')
             }
-    for clf_name, clf in clfs.items():
-        usx = np.copy(x)
-        usy = np.copy(y)
-        make_clf(usx, usy, clf, clf_name, 'OSS')
+    for smlp in ['SMOTE', 'ADASYN', 'Tomek', 'OSS', 'ENN', 'SMOTETomek', 'SMOTEENN']:
+        for clf_name, clf in clfs.items():
+            usx = np.copy(x)
+            usy = np.copy(y)
+            make_clf(usx, usy, clf, clf_name, smlp)
