@@ -200,9 +200,10 @@ if __name__ == "__main__":
                      shoppercountry, interaction, verification, cvcresponse, creationdate_stamp,
                      accountcode, mail_id, ip_id, card_id, label, creationdate])  # add the interested features here
         # y.append(label)# add the labels
-    data = sorted(data, key=lambda k: k[-1])
-    day_aggregate = aggregate(data, 'day')
-    client_aggregate = aggregate(data, 'client')
+    # data = sorted(data, key=lambda k: k[-1])
+    data = sorted(data, key=lambda k: k[9])
+    # day_aggregate = aggregate(data, 'day')
+    # client_aggregate = aggregate(data, 'client')
     # transaction_num_day = []
     # for item in day_aggregate:
     #     transaction_num_day.append(len(item))
@@ -268,7 +269,7 @@ des1 = 'aggregate_data.csv'
 ch_dfa = open(des, 'w')
 
 ch_dfa.write(
-    'issuercountry, txvariantcode, issuer_id, amount, currencycode,shoppercountry, interaction, '
+    'issuercountry, txvariantcode, issuer_id, amount, currencycode, shoppercountry, interaction, '
     'verification, cvcresponse, creationdate_stamp, accountcode, mail_id, ip_id, card_id, label')
 ch_dfa.write('\n')
 
@@ -287,98 +288,98 @@ for i in range(len(x_mean)):
     sentence = []
     ch_dfa.flush()
 
-x_array = np.array(x)
-# x_array = np.delete(x_array, [0, 1, 2, 3, 5, 6, 7, 9, 11, 13], 1)
-x_array = SelectKBest(chi2, k=4).fit_transform(x_array, y)
-y_array = np.array(y)
-
-# pca = PCA(n_components='mle', svd_solver='full')
-# pca.fit(x_array)
-# x_array = pca.transform(x_array)
-
-# tune_clf(x_array, y_array)
-
-usx = x_array
-usy = y_array
-usx = usx.astype(np.float64)
-usy = usy.astype(np.float64)
-# x_train, x_test, y_train, y_test = train_test_split(usx, usy, test_size=0.2)
-totalTP, totalFP, totalFN, totalTN = 0, 0, 0, 0
-total_y_test = []
-total_y_pred = []
-skf = StratifiedKFold(n_splits=10)
-for train_index, test_index in skf.split(usx, usy):
-    x_train, x_test = usx[train_index], usx[test_index]
-    y_train, y_test = usy[train_index], usy[test_index]
-
-    # test_size: proportion of train/test data
-    # sm = SMOTE(k_neighbors=100, n_jobs=-1)
-    # x_train, y_train = sm.fit_resample(x_train, y_train)
-    # print('Resampled dataset shape %s' % Counter(y_train))
-
-    ad = ADASYN(n_neighbors=50)
-    x_train, y_train = ad.fit_resample(x_train, y_train)
-    print('Resampled dataset shape %s' % Counter(y_train))
-
-    # en = EditedNearestNeighbours(n_neighbors=3, n_jobs=-1)
-    # x_train, y_train = en.fit_resample(x_train, y_train)
-    # print('Resampled dataset shape %s' % Counter(y_train))
-
-    # tl = TomekLinks(sampling_strategy='all', random_state=42, n_jobs=-1)
-    # x_train, y_train = tl.fit_resample(x_train, y_train)
-    # print('Resampled dataset shape %s' % Counter(y_train))
-
-    # sm = SMOTETomek()
-    # x_train, y_train = sm.fit_resample(x_train, y_train)
-    # print('Resampled dataset shape %s' % Counter(y_train))
-
-    # clf = neighbors.KNeighborsClassifier(algorithm='kd_tree', n_jobs=-1)
-    # clf = neighbors.KNeighborsClassifier(algorithm='auto', weights='distance', n_jobs=-1)
-    clf = RandomForestClassifier(n_estimators=50, warm_start=True)
-    # clf = BalancedRandomForestClassifier(n_estimators=50, n_jobs=-1)
-    # clf = AdaBoostClassifier()
-    # scaler = StandardScaler().fit(x_train)
-    # scaler = MinMaxScaler().fit(x_train)
-    # x_train = scaler.transform(x_train)
-    # x_test = scaler.transform(x_test)
-    # clf = svm.SVC(kernel='linear', class_weight='balanced')
-
-    clf.fit(x_train, y_train)
-    y_predict = clf.predict(x_test)
-
-    # plot roc curve
-    total_y_test += list(y_test)
-    total_y_pred += list(y_predict)
-
-    TP, FP, FN, TN = 0, 0, 0, 0
-    for i in range(len(y_predict)):
-        if y_test[i] == 1 and y_predict[i] == 1:
-            TP += 1
-        if y_test[i] == 0 and y_predict[i] == 1:
-            FP += 1
-        if y_test[i] == 1 and y_predict[i] == 0:
-            FN += 1
-        if y_test[i] == 0 and y_predict[i] == 0:
-            TN += 1
-    print('TP: ' + str(TP))
-    print('FP: ' + str(FP))
-    print('FN: ' + str(FN))
-    print('TN: ' + str(TN))
-    totalFN += FN
-    totalFP += FP
-    totalTN += TN
-    totalTP += TP
-    # print confusion_matrix(y_test, answear) watch out the element in confusion matrix
-    # precision, recall, thresholds = precision_recall_curve(y_test, y_predict)
-    # predict_proba = clf.predict_proba(x_test)  # the probability of each sample labeled to positive or negative
-
-print('TOTAL TP: ' + str(totalTP))
-print('TOTAL FP: ' + str(totalFP))
-print('TOTAL FN: ' + str(totalFN))
-print('TOTAL TN: ' + str(totalTN))
-
-# total_y_test = np.array(total_y_test)
-# total_y_pred = np.array(total_y_pred)
-# fpr, tpr, threshold = metrics.roc_curve(total_y_test, total_y_pred)
-# roc_auc = metrics.auc(fpr, tpr)
-# plot_roc(fpr, tpr, roc_auc)
+# x_array = np.array(x)
+# # x_array = np.delete(x_array, [0, 1, 2, 3, 5, 6, 7, 9, 11, 13], 1)
+# x_array = SelectKBest(chi2, k=4).fit_transform(x_array, y)
+# y_array = np.array(y)
+#
+# # pca = PCA(n_components='mle', svd_solver='full')
+# # pca.fit(x_array)
+# # x_array = pca.transform(x_array)
+#
+# # tune_clf(x_array, y_array)
+#
+# usx = x_array
+# usy = y_array
+# usx = usx.astype(np.float64)
+# usy = usy.astype(np.float64)
+# # x_train, x_test, y_train, y_test = train_test_split(usx, usy, test_size=0.2)
+# totalTP, totalFP, totalFN, totalTN = 0, 0, 0, 0
+# total_y_test = []
+# total_y_pred = []
+# skf = StratifiedKFold(n_splits=10)
+# for train_index, test_index in skf.split(usx, usy):
+#     x_train, x_test = usx[train_index], usx[test_index]
+#     y_train, y_test = usy[train_index], usy[test_index]
+#
+#     # test_size: proportion of train/test data
+#     # sm = SMOTE(k_neighbors=100, n_jobs=-1)
+#     # x_train, y_train = sm.fit_resample(x_train, y_train)
+#     # print('Resampled dataset shape %s' % Counter(y_train))
+#
+#     ad = ADASYN(n_neighbors=50)
+#     x_train, y_train = ad.fit_resample(x_train, y_train)
+#     print('Resampled dataset shape %s' % Counter(y_train))
+#
+#     # en = EditedNearestNeighbours(n_neighbors=3, n_jobs=-1)
+#     # x_train, y_train = en.fit_resample(x_train, y_train)
+#     # print('Resampled dataset shape %s' % Counter(y_train))
+#
+#     # tl = TomekLinks(sampling_strategy='all', random_state=42, n_jobs=-1)
+#     # x_train, y_train = tl.fit_resample(x_train, y_train)
+#     # print('Resampled dataset shape %s' % Counter(y_train))
+#
+#     # sm = SMOTETomek()
+#     # x_train, y_train = sm.fit_resample(x_train, y_train)
+#     # print('Resampled dataset shape %s' % Counter(y_train))
+#
+#     # clf = neighbors.KNeighborsClassifier(algorithm='kd_tree', n_jobs=-1)
+#     # clf = neighbors.KNeighborsClassifier(algorithm='auto', weights='distance', n_jobs=-1)
+#     clf = RandomForestClassifier(n_estimators=50, warm_start=True)
+#     # clf = BalancedRandomForestClassifier(n_estimators=50, n_jobs=-1)
+#     # clf = AdaBoostClassifier()
+#     # scaler = StandardScaler().fit(x_train)
+#     # scaler = MinMaxScaler().fit(x_train)
+#     # x_train = scaler.transform(x_train)
+#     # x_test = scaler.transform(x_test)
+#     # clf = svm.SVC(kernel='linear', class_weight='balanced')
+#
+#     clf.fit(x_train, y_train)
+#     y_predict = clf.predict(x_test)
+#
+#     # plot roc curve
+#     total_y_test += list(y_test)
+#     total_y_pred += list(y_predict)
+#
+#     TP, FP, FN, TN = 0, 0, 0, 0
+#     for i in range(len(y_predict)):
+#         if y_test[i] == 1 and y_predict[i] == 1:
+#             TP += 1
+#         if y_test[i] == 0 and y_predict[i] == 1:
+#             FP += 1
+#         if y_test[i] == 1 and y_predict[i] == 0:
+#             FN += 1
+#         if y_test[i] == 0 and y_predict[i] == 0:
+#             TN += 1
+#     print('TP: ' + str(TP))
+#     print('FP: ' + str(FP))
+#     print('FN: ' + str(FN))
+#     print('TN: ' + str(TN))
+#     totalFN += FN
+#     totalFP += FP
+#     totalTN += TN
+#     totalTP += TP
+#     # print confusion_matrix(y_test, answear) watch out the element in confusion matrix
+#     # precision, recall, thresholds = precision_recall_curve(y_test, y_predict)
+#     # predict_proba = clf.predict_proba(x_test)  # the probability of each sample labeled to positive or negative
+#
+# print('TOTAL TP: ' + str(totalTP))
+# print('TOTAL FP: ' + str(totalFP))
+# print('TOTAL FN: ' + str(totalFN))
+# print('TOTAL TN: ' + str(totalTN))
+#
+# # total_y_test = np.array(total_y_test)
+# # total_y_pred = np.array(total_y_pred)
+# # fpr, tpr, threshold = metrics.roc_curve(total_y_test, total_y_pred)
+# # roc_auc = metrics.auc(fpr, tpr)
+# # plot_roc(fpr, tpr, roc_auc)

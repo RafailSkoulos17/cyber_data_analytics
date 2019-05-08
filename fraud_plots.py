@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import seaborn as sns
 import pandas as pd
-from operator import itemgetter
-from itertools import groupby
 
 
 def string_to_timestamp(date_string):  # convert time string to float value
@@ -68,18 +66,17 @@ def make_boxplot(data):
     plt.xlabel("Merchant's webshop")
     plt.ylabel("Amount in euros")
     plt.grid()
-    plt.savefig('boxplot_accountcode_amount.png')
+    plt.savefig('plots/boxplot_accountcode_amount.png')
     print('boxplot created')
 
 
 def make_boxplot_money(data):
     ax = sns.boxplot(x="labels", y="amount", data=data,
                 palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
-    # plt.xlabel("Merchant's webshop")
     ax.set_xticklabels(['benign', 'fraudulent'])
     plt.ylabel("Amount in euros")
     plt.grid()
-    plt.savefig('boxplot_labels_amount.png')
+    plt.savefig('plots/boxplot_labels_amount.png')
     print('boxplot created')
 
 
@@ -93,7 +90,7 @@ def make_barplot(data):
     plt.xlabel("CVC code")
     plt.ylabel("Percentage of occurrences")
     plt.grid()
-    plt.savefig('barplot_cvc.png')
+    plt.savefig('plots/barplot_cvc.png')
     print('barplot created')
 
 
@@ -108,12 +105,11 @@ def make_barplot_issued(data):
     plt.xlabel("Issuer Country")
     plt.ylabel("Percentage of occurrences")
     plt.grid()
-    plt.savefig('barplot_issuer.png')
+    plt.savefig('plots/barplot_issuer.png')
     print('barplot created')
 
 
 def make_boxplot_card_type(data):
-    plt.figure(figsize=(13, 8))
     ax = sns.boxplot(x="amount", y="txvariantcode", hue="labels", data=data,
                      palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
     handles, _ = ax.get_legend_handles_labels()
@@ -121,13 +117,44 @@ def make_boxplot_card_type(data):
     plt.xlabel("Amount in euros")
     plt.ylabel("Type of card")
     plt.grid()
-    plt.savefig('boxplot_card_type.png')
+    plt.savefig('plots/boxplot_card_type.png')
     print('boxplot created')
 
-# create_initial_dataset()
-data = pd.read_csv('data_for_plots.csv')
-# make_boxplot(data)
-# make_barplot(data)
-# make_boxplot_money(data)
-# make_barplot_issued(data)
-make_boxplot_card_type(data)
+
+def make_boxplot_issuer_id(data):
+    ax = sns.boxplot(x="labels", y="issuer_id", data=data,
+                     palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
+    ax.set_xticklabels(['benign', 'fraudulent'])
+    plt.ylabel("Card issuer identifier")
+    plt.grid()
+    plt.savefig('plots/boxplot_labels_issuer_id.png')
+    print('boxplot created')
+
+
+def make_boxplot_ip(data):
+    ax = sns.boxplot(x="labels", y="ip_id", data=data,
+                     palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
+    ax.set_xticklabels(['benign', 'fraudulent'])
+    plt.ylabel("IP address")
+    plt.grid()
+    plt.savefig('plots/boxplot_labels_ip.png')
+    print('boxplot created')
+
+
+if __name__ == "__main__":
+    # create_initial_dataset()
+    data = pd.read_csv('data_for_plots.csv')
+    plt.figure()
+    make_boxplot(data)
+    plt.figure()
+    make_barplot(data)
+    plt.figure()
+    make_boxplot_money(data)
+    plt.figure()
+    make_barplot_issued(data)
+    plt.figure(figsize=(13, 8))
+    make_boxplot_card_type(data)
+    # plt.figure()
+    # make_boxplot_issuer_id(data)
+    plt.figure()
+    make_boxplot_ip(data)

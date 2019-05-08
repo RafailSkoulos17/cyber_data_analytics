@@ -1,51 +1,78 @@
-# coding: utf-8
-
-# In[7]:
-
-
-import datetime
 import time
-import matplotlib.pyplot as plt
-from sklearn import neighbors, svm
-from sklearn.decomposition import PCA
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn import neighbors
+from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier, ExtraTreesClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV
-from sklearn.metrics import confusion_matrix
-from operator import itemgetter
-from itertools import groupby
+from sklearn.metrics import precision_recall_curve, confusion_matrix
+from sklearn.model_selection import StratifiedKFold
 import numpy as np
-import seaborn as sns
 import pandas as pd
-import random
-from seaborn import pairplot
-from collections import Counter
-from imblearn.over_sampling import SMOTE, ADASYN
-from imblearn.under_sampling import TomekLinks, EditedNearestNeighbours
-from imblearn.combine import SMOTETomek, SMOTEENN
-from imblearn.ensemble import BalancedRandomForestClassifier
+from imblearn.over_sampling import SMOTE
 import sklearn.metrics as metrics
-from scipy.stats import randint as sp_randint
-from imblearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
 
 
-def plot_roc(fpr, tpr, roc_auc, clf_name):
+def plot_roc(fpr, tpr, roc_auc, fpr_smote, tpr_smote, roc_auc_smote, clf_name):
     plt.figure()
     plt.title('{} - Receiver Operating Characteristic'.format(clf_name))
-    plt.plot(fpr, tpr, 'b', label='AUC = %0.2f' % roc_auc)
+    plt.plot(fpr, tpr, 'r', label='AUC unSMOTEd = %0.2f' % roc_auc)
+    plt.plot(fpr_smote, tpr_smote, 'g', label='AUC SMOTEd = %0.2f' % roc_auc_smote)
     plt.legend(loc='lower right')
-    plt.plot([0, 1], [0, 1], 'r--')
+    plt.plot([0, 1], [0, 1], 'b--')
     plt.xlim([0, 1])
     plt.ylim([0, 1])
     plt.ylabel('True Positive Rate')
     plt.xlabel('False Positive Rate')
-    plt.savefig('{}_ROC.png'.format(clf_name), bbox_inches='tight')
-    # plt.show()
+    plt.savefig('imbalance_plots/{}_ROC.png'.format(clf_name), bbox_inches='tight')
+
+
+def plot_confusion_matrix(y_true, y_pred, clf_name, classes, smote, normalize=False, title=None, cmap=plt.cm.Blues):
+    if not title:
+        if normalize:
+            title = '{} - Normalized confusion matrix'.format(clf_name+smote)
+        else:
+            title = '{} - Confusion matrix, without normalization'.format(clf_name+smote)
+    cm = confusion_matrix(y_true, y_pred)
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(cm, interpolation='nearest', cmap=cmap)
+    ax.figure.colorbar(im, ax=ax)
+    ax.set(xticks=np.arange(cm.shape[1]),
+           yticks=np.arange(cm.shape[0]),
+           xticklabels=classes, yticklabels=classes,
+           title=title,
+           ylabel='True label',
+           xlabel='Predicted label')
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], fmt), ha="center", va="center", color="white" if cm[i, j] > thresh else "black")
+    fig.tight_layout()
+    fig.savefig('imbalance_plots/{}_confusion.png'.format(clf_name+smote))
+    return ax
+
+
+def plot_prec_rec(precision, recall, precision_smote, recall_smote):
+    plt.figure()
+    plt.title('{} - Precision-recall curve'.format(clf_name))
+    plt.plot(recall, precision, 'r', label='Precision-recall UnSMOTEd')
+    plt.plot(recall_smote, precision_smote, 'g', label='Precision-recall SMOTEd')
+    plt.legend(loc='upper right')
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.savefig('imbalance_plots/{}_Prec_Rec.png'.format(clf_name), bbox_inches='tight')
 
 
 def string_to_timestamp(date_string):  # convert time string to float value
@@ -53,176 +80,47 @@ def string_to_timestamp(date_string):  # convert time string to float value
     return time.mktime(time_stamp)
 
 
-def visualise_heatmap(data, labels):
-    to_plot = [data[ind] for ind, y in enumerate(labels) if y]
-    print(len(to_plot))
-    to_plot += random.sample([data[ind] for ind, y in enumerate(labels) if not y], len(to_plot))
-    print(len(to_plot))
-    df = pd.DataFrame(to_plot)
-    df.columns = ['issuercountry', 'txvariantcode', 'issuer_id', 'amount', 'currencycode',
-                  'shoppercountry', 'interaction', 'verification', 'cvcresponse', 'creationdate_stamp',
-                  'accountcode', 'mail_id', 'ip_id', 'card_id']
-    df.drop('creationdate_stamp', axis=1, inplace=True)
-    ax = sns.heatmap(df)
-    plt.show()
-
-
-def visualise_pair_plot(data, labels):
-    df = pd.DataFrame(data)
-    cols = ['issuercountry', 'txvariantcode', 'issuer_id', 'amount', 'currencycode',
-            'shoppercountry', 'interaction', 'verification', 'cvcresponse',
-            'accountcode', 'mail_id', 'ip_id', 'card_id']
-
-    df.columns = ['issuercountry', 'txvariantcode', 'issuer_id', 'amount', 'currencycode',
-                  'shoppercountry', 'interaction', 'verification', 'cvcresponse', 'creationdate_stamp',
-                  'accountcode', 'mail_id', 'ip_id', 'card_id']
-    df.drop('creationdate_stamp', axis=1, inplace=True)
-    df['label'] = labels
-    ax = pairplot(df, vars=cols, hue='label', markers=['.', 'x'])
-    plt.show()
-
-
-# In[9]:
-
-
-def aggregate(before_aggregate, aggregate_feature):
-    if aggregate_feature == 'day':
-        after_aggregate = []
-        pos_date = -1
-        before_aggregate.sort(key=itemgetter(9))  # sort by timestamp
-        temp = groupby(before_aggregate, itemgetter(-2))
-        group_unit = []
-        mean = []
-        for i, item in temp:  # i is group id
-            for jtem in item:  # unit in each group
-                group_unit.append(jtem)
-            # for feature_i in xrange(6):
-            #    mean.append(zip(group_unit)[feature_i])
-            # after_aggregate.append(group_unit)
-            after_aggregate.append(mean)
-            group_unit = []
-        # print after_aggregate[0]
-        # print before_aggregate[0]
-    if aggregate_feature == 'client':
-        after_aggregate = []
-        pos_client = -3
-        before_aggregate.sort(
-            key=itemgetter(pos_client))  # sort with cardID firstly，if sort with 2 feature, itemgetter(num1,num2)
-        temp = groupby(before_aggregate, itemgetter(pos_client))  # group
-        group_unit = []
-        for i, item in temp:  # i is group id
-            for jtem in item:  # unit in each group
-                group_unit.append(jtem)
-            after_aggregate.append(group_unit)
-            group_unit = []
-    return after_aggregate
-
-
-# In[10]:
-
-
-def aggregate_mean(before_aggregate):
-    # print before_aggregate[0]
-    if True:
-        after_aggregate = []
-        pos_date = -1
-        before_aggregate.sort(key=itemgetter(-1))  # sort by timestamp
-        temp = groupby(before_aggregate, itemgetter(-1))
-        group_unit = []
-        mean = []
-        for i, item in temp:  # i is group id
-            for jtem in item:  # unit in each group
-                group_unit.append(list(jtem))
-            # print group_unit
-            if len(zip(group_unit)) < 2:
-                after_aggregate.append(group_unit)
-                group_unit = []
-            if len(zip(group_unit)) >= 2:
-                # print zip(group_unit)
-                for feature_i in range(14):
-                    # print zip(group_unit)[feature_i]
-                    mean.append(sum(zip(*group_unit)[feature_i]) / len(zip(group_unit)))
-                after_aggregate.append(mean)
-                group_unit = []
-                mean = []
-        # print after_aggregate[0]
-        # print before_aggregate[0]
-    return after_aggregate
-
-
-# In[16]:
-
-def make_clf(usx, usy, clf, clf_name, normalize=False):
+def make_clf(usx, usy, clf, clf_name, normalize=False, smoted=False):
     print('----------{}----------'.format(clf_name))
     totalTP, totalFP, totalFN, totalTN = 0, 0, 0, 0
     total_y_test = []
     total_y_prob = []
+    total_y_pred = []
     skf = StratifiedKFold(n_splits=10)
     for train_index, test_index in skf.split(usx, usy):
         x_train, x_test = usx[train_index], usx[test_index]
         y_train, y_test = usy[train_index], usy[test_index]
 
-        sm = SMOTE(k_neighbors=50, n_jobs=-1)
-        x_train, y_train = sm.fit_resample(x_train, y_train)
+        if smoted:
+            sm = SMOTE(sampling_strategy=0.5, k_neighbors=5)
+            x_train, y_train = sm.fit_resample(x_train, y_train)
         # print('Resampled dataset shape %s' % Counter(y_train))
 
-        # ad = ADASYN(n_neighbors=50, n_jobs=-1)
-        # x_train, y_train = ad.fit_resample(x_train, y_train)
-        # print('Resampled dataset shape %s' % Counter(y_train))
-
-        # en = EditedNearestNeighbours(n_neighbors=3, n_jobs=-1)
-        # x_train, y_train = en.fit_resample(x_train, y_train)
-        # print('Resampled dataset shape %s' % Counter(y_train))
-
-        # tl = TomekLinks(sampling_strategy='majority', random_state=42, n_jobs=-1)
-        # x_train, y_train = tl.fit_resample(x_train, y_train)
-        # print('Resampled dataset shape %s' % Counter(y_train))
-        #
-        # sm = SMOTETomek(smote=SMOTE(k_neighbors=50, n_jobs=-1), tomek=TomekLinks())
-        # x_train, y_train = sm.fit_resample(x_train, y_train)
-        # print('Resampled dataset shape %s' % Counter(y_train))
-        # clf = neighbors.KNeighborsClassifier(algorithm='kd_tree', weights='distance', n_jobs=-1)  # nice results
-        # clf = LogisticRegression()
-        # clf = AdaBoostClassifier(n_estimators=100)
-        # clf = RandomForestClassifier(n_estimators=100, n_jobs=-1)
-        # clf = neighbors.KNeighborsClassifier(algorithm='kd_tree', n_jobs=-1) #good results
-        # clf = neighbors.KNeighborsClassifier(algorithm='auto', weights='distance', n_jobs=-1) #nice results
-        # clf = BalancedRandomForestClassifier(n_estimators=100, n_jobs=-1)
         if normalize:
-            scaler = StandardScaler().fit(x_train)
+            scaler = RobustScaler().fit(x_train)
             x_train = scaler.transform(x_train)
             x_test = scaler.transform(x_test)
-        # clf = svm.SVC(kernel='linear')
 
         clf.fit(x_train, y_train)
         y_predict = clf.predict(x_test)
-
-        # plot roc curve
+        y_proba = clf.predict_proba(x_test)
+        # needed for roc curve
         total_y_test += list(y_test)
-        total_y_prob += list(clf.predict_proba(x_test)[:, 1])
+        total_y_prob += list(y_proba[:, 1])
+        total_y_pred += list(y_predict)
 
-        TP, FP, FN, TN = 0, 0, 0, 0
         for i in range(len(y_predict)):
-            if y_test[i] == 1 and y_predict[i] == 1:
-                TP += 1
-            if y_test[i] == 0 and y_predict[i] == 1:
-                FP += 1
-            if y_test[i] == 1 and y_predict[i] == 0:
-                FN += 1
-            if y_test[i] == 0 and y_predict[i] == 0:
-                TN += 1
-        # print('TP: ' + str(TP))
-        # print('FP: ' + str(FP))
-        # print('FN: ' + str(FN))
-        # print('TN: ' + str(TN))
-        # print(TP + TN + FP + FN)
-        totalFN += FN
-        totalFP += FP
-        totalTN += TN
-        totalTP += TP
-        # print confusion_matrix(y_test, answear) watch out the element in confusion matrix
-        precision, recall, thresholds = precision_recall_curve(y_test, y_predict)
-        predict_proba = clf.predict_proba(x_test)  # the probability of each smple labelled to positive or negative
+            if y_predict[i] and y_proba[i, 1] <= 0.85:
+                y_predict[i] = 0
+        for i in range(len(y_predict)):
+            if y_test[i] and y_predict[i]:
+                totalTP += 1
+            if not y_test[i] and y_predict[i]:
+                totalFP += 1
+            if y_test[i] and not y_predict[i]:
+                totalFN += 1
+            if not y_test[i] and not y_predict[i]:
+                totalTN += 1
 
     print('TOTAL TP: ' + str(totalTP))
     print('TOTAL FP: ' + str(totalFP))
@@ -230,10 +128,18 @@ def make_clf(usx, usy, clf, clf_name, normalize=False):
     print('TOTAL TN: ' + str(totalTN))
 
     total_y_test = np.array(total_y_test)
-    total_y_pred = np.array(total_y_prob)
-    fpr, tpr, threshold = metrics.roc_curve(total_y_test, total_y_pred)
+    total_y_prob = np.array(total_y_prob)
+    total_y_pred = np.array(total_y_pred)
+    fpr, tpr, _ = metrics.roc_curve(total_y_test, total_y_prob)
+    precision, recall, _ = precision_recall_curve(total_y_test, total_y_prob)
     roc_auc = metrics.auc(fpr, tpr)
-    plot_roc(fpr, tpr, roc_auc, clf_name)
+    if smoted:
+        plot_confusion_matrix(total_y_test, total_y_pred, clf_name, ['benign', 'fraudulent'], ' SMOTEd',
+                            normalize=True, title=None, cmap=plt.cm.Blues)
+    else:
+        plot_confusion_matrix(total_y_test, total_y_pred, clf_name, ['benign', 'fraudulent'], '',
+                              normalize=True, title=None, cmap=plt.cm.Blues)
+    return fpr, tpr, roc_auc, precision, recall
 
 
 if __name__ == "__main__":
@@ -241,25 +147,30 @@ if __name__ == "__main__":
     data = pd.read_csv(filename)
     x = data.iloc[:, :-1].values
     y = data.iloc[:, -1].values
-    # raw_data = open(filename, 'rt')
-    # data = np.loadtxt(raw_data, skiprows=1, delimiter=",", dtype=np.float64)
-    # x = data[:, :-1]
-    # y = data[:, -1]
 
-    # x_array = np.delete(x_array, [0, 1, 2, 3, 5, 6, 7, 9, 11, 13], 1)
-    x = np.delete(x, [1, 2, 3, 5, 6, 7, 9, 11, 13], 1)
-
-    # pca = PCA(n_components='mle', svd_solver='full')
-    # pca.fit(x_array)
-    # x_array = pca.transform(x_array)
-    clfs = {'KNeighborsClassifier': neighbors.KNeighborsClassifier(algorithm='kd_tree', weights='distance', n_jobs=-1),
-            'LogisticRegression': LogisticRegression(solver='newton-cg'),
-            'AdaBoostClassifier': AdaBoostClassifier(n_estimators=100),
-            'RandomForestClassifier': RandomForestClassifier(n_estimators=100, n_jobs=-1)}
+    x = np.delete(x, [2, 5, 6, 7, 9, 11, 13], 1)
+    clfs = {'KNeighborsClassifier': neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='auto', weights='distance')
+            , 'LogisticRegression': LogisticRegression(solver='newton-cg')
+            , 'NaiveBayes': GaussianNB()
+            # , 'AdaBoostClassifier': AdaBoostClassifier(n_estimators=50)
+            # , 'RandomForestClassifier': RandomForestClassifier(n_estimators=50)
+            # , 'ExtraTreesClassifier': ExtraTreesClassifier(n_estimators=50)
+            # , 'VotingClassifier': VotingClassifier(estimators=[
+            #         ('knn', neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='kd_tree', weights='distance')),
+            #         ('rf', RandomForestClassifier(n_estimators=50)),
+            #         ('gnb', GaussianNB())
+            #         ], voting='hard')
+            }
     for clf_name, clf in clfs.items():
         usx = np.copy(x)
         usy = np.copy(y)
-        if clf_name=='LogisticRegression':
-            make_clf(usx, usy, clf, clf_name, normalize=True)
+        if clf_name == 'LogisticRegression':
+            fpr, tpr, roc_auc, precision, recall = make_clf(usx, usy, clf, clf_name, normalize=True)
+            fpr_smote, tpr_smote, roc_auc_smote, precision_smote, recall_smote = \
+                make_clf(usx, usy, clf, clf_name, normalize=True, smoted=True)
         else:
-            make_clf(usx, usy, clf, clf_name)
+            fpr, tpr, roc_auc, precision, recall = make_clf(usx, usy, clf, clf_name)
+            fpr_smote, tpr_smote, roc_auc_smote, precision_smote, recall_smote = \
+                make_clf(usx, usy, clf, clf_name, smoted=True)
+        plot_roc(fpr, tpr, roc_auc, fpr_smote, tpr_smote, roc_auc_smote, clf_name)
+        # plot_prec_rec(precision, recall, precision_smote, recall_smote)
