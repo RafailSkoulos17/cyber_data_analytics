@@ -1,0 +1,13 @@
+sampling method: OSS
+weight: 1:10
+
+----------DecisionTreeClassifier----------
+TOTAL TP: 104
+TOTAL FP: 360
+TOTAL FN: 241
+TOTAL TN: 235993
+----------RandomForestClassifier----------
+TOTAL TP: 101
+TOTAL FP: 292
+TOTAL FN: 244
+TOTAL TN: 236061
