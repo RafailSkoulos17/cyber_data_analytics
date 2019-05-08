@@ -1,7 +1,8 @@
 import time
 from sklearn import neighbors
 from sklearn.naive_bayes import GaussianNB
-from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier, ExtraTreesClassifier, VotingClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier, ExtraTreesClassifier, VotingClassifier, \
+    GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_curve, confusion_matrix
 from sklearn.model_selection import StratifiedKFold
@@ -92,9 +93,8 @@ def make_clf(usx, usy, clf, clf_name, normalize=False, smoted=False):
         y_train, y_test = usy[train_index], usy[test_index]
 
         if smoted:
-            sm = SMOTE(sampling_strategy=0.5, k_neighbors=5)
+            sm = SMOTE(sampling_strategy=0.5)
             x_train, y_train = sm.fit_resample(x_train, y_train)
-        # print('Resampled dataset shape %s' % Counter(y_train))
 
         if normalize:
             scaler = RobustScaler().fit(x_train)
@@ -110,7 +110,7 @@ def make_clf(usx, usy, clf, clf_name, normalize=False, smoted=False):
         total_y_pred += list(y_predict)
 
         for i in range(len(y_predict)):
-            if y_predict[i] and y_proba[i, 1] <= 0.85:
+            if y_predict[i] and y_proba[i, 1] <= 0.65:
                 y_predict[i] = 0
         for i in range(len(y_predict)):
             if y_test[i] and y_predict[i]:
@@ -148,18 +148,19 @@ if __name__ == "__main__":
     x = data.iloc[:, :-1].values
     y = data.iloc[:, -1].values
 
-    x = np.delete(x, [2, 5, 6, 7, 9, 11, 13], 1)
+    x = np.delete(x, [2, 4, 5, 6, 7, 9, 11, 13], 1)
     clfs = {'KNeighborsClassifier': neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='auto', weights='distance')
             , 'LogisticRegression': LogisticRegression(solver='newton-cg')
             , 'NaiveBayes': GaussianNB()
-            # , 'AdaBoostClassifier': AdaBoostClassifier(n_estimators=50)
-            # , 'RandomForestClassifier': RandomForestClassifier(n_estimators=50)
-            # , 'ExtraTreesClassifier': ExtraTreesClassifier(n_estimators=50)
-            # , 'VotingClassifier': VotingClassifier(estimators=[
-            #         ('knn', neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='kd_tree', weights='distance')),
-            #         ('rf', RandomForestClassifier(n_estimators=50)),
-            #         ('gnb', GaussianNB())
-            #         ], voting='hard')
+            , 'AdaBoostClassifier': AdaBoostClassifier(n_estimators=50)
+            , 'RandomForestClassifier': RandomForestClassifier(n_estimators=100)
+            , 'ExtraTreesClassifier': ExtraTreesClassifier(n_estimators=100)
+            , 'GradientBoostingClassifier': GradientBoostingClassifier(n_estimators=100)
+            , 'VotingClassifier': VotingClassifier(estimators=[
+                    ('knn', neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='kd_tree', weights='distance')),
+                    ('lr', LogisticRegression(solver='newton-cg')),
+                    ('gnb', GaussianNB())
+                    ], voting='soft')
             }
     for clf_name, clf in clfs.items():
         usx = np.copy(x)
