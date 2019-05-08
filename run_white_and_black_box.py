@@ -1,4 +1,3 @@
-import os
 import time
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -24,14 +23,12 @@ def plot_decision_tree(clf):
                          'shoppercountry', 'interaction', 'verification', 'cvcresponse', 'creationdate_stamp',
                          'accountcode', 'mail_id', 'ip_id', 'card_id'])
     fearure_nums = [0, 4, 5, 8, 10, 12]
-    # dot_data = StringIO()
-    graph = Source(export_graphviz(clf, out_file=None, max_depth=5, feature_names=features[fearure_nums],
+    graph = Source(export_graphviz(clf, out_file=None, max_depth=3, feature_names=features[fearure_nums],
                     class_names=['benign', 'fraudulent'], filled=True, rounded=True, special_characters=True,
                     proportion=False, precision=2))
     png_bytes = graph.pipe(format='png')
     with open('dtree.png', 'wb') as f:
         f.write(png_bytes)
-    # os.system('dot -Tpng tree.dot -o tree.png')
 
 
 def make_clf(usx, usy, clf, clf_name, sampling, normalize=False):
@@ -98,9 +95,9 @@ if __name__ == "__main__":
 
     x = np.delete(x, [1, 2, 3, 6, 7, 9, 11, 13], 1)
 
-    clfs = {'DecisionTreeClassifier': DecisionTreeClassifier(criterion='entropy', class_weight={0: 1, 1: 10})
-            , 'RandomForestClassifier': RandomForestClassifier(n_estimators=50, criterion='entropy',
-                                                               class_weight={0: 1, 1: 10})
+    clfs = {'DecisionTreeClassifier': DecisionTreeClassifier(criterion='entropy', class_weight='balanced')
+            , 'RandomForestClassifier': RandomForestClassifier(n_estimators=75, criterion='entropy',
+                                                               class_weight='balanced')
             }
     for clf_name, clf in clfs.items():
         usx = np.copy(x)
