@@ -572,7 +572,8 @@ if __name__ == "__main__":
             'DecisionTreeClassifier': DecisionTreeClassifier(criterion='entropy', class_weight='balanced')}
 
     # make classification
-    for clf_name, clf in clfs.items():
-        usx = np.copy(x)
-        usy = np.copy(y)
-        make_clf(usx, usy, clf, clf_name, strategy='SMOTE', cutoff=0.4)
+    for strategy in ['SMOTE', 'ENN', 'SMOTEEN']:
+        for clf_name, clf in clfs.items():
+            usx = np.copy(x)
+            usy = np.copy(y)
+            make_clf(usx, usy, clf, clf_name, strategy=strategy, cutoff=0.4)
