@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import time
 from sklearn import neighbors
 from sklearn.naive_bayes import GaussianNB

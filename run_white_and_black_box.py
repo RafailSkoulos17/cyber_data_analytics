@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import time
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
