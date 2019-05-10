@@ -13,12 +13,18 @@ from graphviz import Source
 from random import randint
 
 
-def string_to_timestamp(date_string):  # convert time string to float value
+def string_to_timestamp(date_string):
+    '''
+    Function coverting a time string to a float timestamp
+    '''
     time_stamp = time.strptime(date_string, '%Y-%m-%d %H:%M:%S')
     return time.mktime(time_stamp)
 
 
 def plot_decision_tree(clf):
+    '''
+    Function for the classification task - Plots the structure of the trained decision tree
+    '''
     features = np.array(['issuercountry', 'txvariantcode', 'issuer_id', 'amount', 'currencycode',
                          'shoppercountry', 'interaction', 'verification', 'cvcresponse', 'creationdate_stamp',
                          'accountcode', 'mail_id', 'ip_id', 'card_id'])
@@ -32,6 +38,11 @@ def plot_decision_tree(clf):
 
 
 def make_clf(usx, usy, clf, clf_name, sampling, normalize=False):
+    '''
+    Function for the classification task - Trains and tests the classifier clf using 10-fold cross-validation
+    If normalize flag is True then the data are being normalised
+    The sampling parameter sets the type of sampling to be used
+    '''
     print('----------{} with {}----------'.format(clf_name, sampling))
     totalTP, totalFP, totalFN, totalTN = 0, 0, 0, 0
     plot_ind = randint(0, 9)
@@ -93,13 +104,14 @@ if __name__ == "__main__":
     x = data.iloc[:, :-1].values
     y = data.iloc[:, -1].values
 
-    x = np.delete(x, [1, 2, 3, 6, 7, 9, 11, 13], 1)
+    x = np.delete(x, [1, 2, 3, 6, 7, 9, 11, 13], 1)  # specific features are kept
 
+    # dictionaries with the two classifiers to be tested
     clfs = {'DecisionTreeClassifier': DecisionTreeClassifier(criterion='entropy', class_weight='balanced')
             , 'RandomForestClassifier': RandomForestClassifier(n_estimators=50, criterion='entropy',
                                                                class_weight='balanced')
             }
-    for smlp in ['SMOTE', 'ADASYN', 'Tomek', 'OSS', 'ENN', 'SMOTETomek', 'SMOTEENN']:
+    for smlp in ['SMOTE', 'ADASYN', 'Tomek', 'OSS', 'ENN', 'SMOTETomek', 'SMOTEENN']:  # check different types of sampling
         for clf_name, clf in clfs.items():
             usx = np.copy(x)
             usy = np.copy(y)

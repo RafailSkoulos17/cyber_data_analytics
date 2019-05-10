@@ -15,6 +15,9 @@ from sklearn.preprocessing import RobustScaler
 
 
 def plot_roc(fpr, tpr, roc_auc, fpr_smote, tpr_smote, roc_auc_smote, clf_name):
+    '''
+    Function for the imbalance task - Plots the ROC curve for both the SMOTEd and unSMOTEd classifier
+    '''
     plt.figure()
     plt.title('{} - Receiver Operating Characteristic'.format(clf_name))
     plt.plot(fpr, tpr, 'r', label='AUC unSMOTEd = %0.2f' % roc_auc)
@@ -29,8 +32,11 @@ def plot_roc(fpr, tpr, roc_auc, fpr_smote, tpr_smote, roc_auc_smote, clf_name):
 
 
 def plot_confusion_matrix(y_true, y_pred, clf_name, classes, smote, normalize=False, title=None, cmap=plt.cm.Blues):
+    '''
+    Function for the imbalance task - Plots the confusion matrix of a classifier
+    '''
     if not title:
-        if normalize:
+        if normalize:  # check if the normalized confusion matrix is to be plotted
             title = '{} - Normalized confusion matrix'.format(clf_name+smote)
         else:
             title = '{} - Confusion matrix, without normalization'.format(clf_name+smote)
@@ -64,6 +70,9 @@ def plot_confusion_matrix(y_true, y_pred, clf_name, classes, smote, normalize=Fa
 
 
 def plot_prec_rec(precision, recall, precision_smote, recall_smote):
+    '''
+    Function for the imbalance task - Plots the Precision-Recall curve for both the SMOTEd and unSMOTEd classifier
+    '''
     plt.figure()
     plt.title('{} - Precision-recall curve'.format(clf_name))
     plt.plot(recall, precision, 'r', label='Precision-recall UnSMOTEd')
@@ -76,41 +85,49 @@ def plot_prec_rec(precision, recall, precision_smote, recall_smote):
     plt.savefig('imbalance_plots/{}_Prec_Rec.png'.format(clf_name), bbox_inches='tight')
 
 
-def string_to_timestamp(date_string):  # convert time string to float value
+def string_to_timestamp(date_string):
+    '''
+    Function coverting a time string to a float timestamp
+    '''
     time_stamp = time.strptime(date_string, '%Y-%m-%d %H:%M:%S')
     return time.mktime(time_stamp)
 
 
 def make_clf(usx, usy, clf, clf_name, normalize=False, smoted=False):
+    '''
+    Function for the imbalance task - Trains and tests the classifier clf using 10-fold cross-validation
+    If normalize flag is True then the data are being normalised
+    If smoted flag is True then SMOTE is used to oversample the minority class
+    '''
     print('----------{}----------'.format(clf_name))
     totalTP, totalFP, totalFN, totalTN = 0, 0, 0, 0
     total_y_test = []
     total_y_prob = []
     total_y_pred = []
-    skf = StratifiedKFold(n_splits=10)
+    skf = StratifiedKFold(n_splits=10)  # 10-fold stratified cross validation
     for train_index, test_index in skf.split(usx, usy):
         x_train, x_test = usx[train_index], usx[test_index]
         y_train, y_test = usy[train_index], usy[test_index]
 
-        if smoted:
+        if smoted:  # SMOTE applied
             sm = SMOTE(sampling_strategy=0.5)
             x_train, y_train = sm.fit_resample(x_train, y_train)
 
-        if normalize:
+        if normalize:  # normalization applied
             scaler = RobustScaler().fit(x_train)
             x_train = scaler.transform(x_train)
             x_test = scaler.transform(x_test)
 
-        clf.fit(x_train, y_train)
-        y_predict = clf.predict(x_test)
-        y_proba = clf.predict_proba(x_test)
+        clf.fit(x_train, y_train)  # training of the classifier
+        y_predict = clf.predict(x_test)  # testing the classifier
+        y_proba = clf.predict_proba(x_test)  # class-wise probabilities of each test sample
         # needed for roc curve
         total_y_test += list(y_test)
         total_y_prob += list(y_proba[:, 1])
         total_y_pred += list(y_predict)
 
         for i in range(len(y_predict)):
-            if y_predict[i] and y_proba[i, 1] <= 0.65:
+            if y_predict[i] and y_proba[i, 1] <= 0.65:  # adding more "cost" to the misclassification in the fraudulent class
                 y_predict[i] = 0
         for i in range(len(y_predict)):
             if y_test[i] and y_predict[i]:
@@ -130,9 +147,9 @@ def make_clf(usx, usy, clf, clf_name, normalize=False, smoted=False):
     total_y_test = np.array(total_y_test)
     total_y_prob = np.array(total_y_prob)
     total_y_pred = np.array(total_y_pred)
-    fpr, tpr, _ = metrics.roc_curve(total_y_test, total_y_prob)
+    fpr, tpr, _ = metrics.roc_curve(total_y_test, total_y_prob)  # create FPR ans TPR values for the ROC curve plotting
     precision, recall, _ = precision_recall_curve(total_y_test, total_y_prob)
-    roc_auc = metrics.auc(fpr, tpr)
+    roc_auc = metrics.auc(fpr, tpr)  # Area under curve calculation
     if smoted:
         plot_confusion_matrix(total_y_test, total_y_pred, clf_name, ['benign', 'fraudulent'], ' SMOTEd',
                             normalize=True, title=None, cmap=plt.cm.Blues)
@@ -148,7 +165,9 @@ if __name__ == "__main__":
     x = data.iloc[:, :-1].values
     y = data.iloc[:, -1].values
 
-    x = np.delete(x, [2, 4, 5, 6, 7, 9, 11, 13], 1)
+    x = np.delete(x, [2, 4, 5, 6, 7, 9, 11, 13], 1)  # specific features are kept - selection done mainly according to the
+                                                     #  relationships identified in the visualization part
+    # dictionary with the tested classifiers
     clfs = {'KNeighborsClassifier': neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='auto', weights='distance')
             , 'LogisticRegression': LogisticRegression(solver='newton-cg')
             , 'NaiveBayes': GaussianNB()
@@ -162,7 +181,7 @@ if __name__ == "__main__":
                     ('gnb', GaussianNB())
                     ], voting='soft')
             }
-    for clf_name, clf in clfs.items():
+    for clf_name, clf in clfs.items():  # check all the classifiers both with and without SMOTE
         usx = np.copy(x)
         usy = np.copy(y)
         if clf_name == 'LogisticRegression':

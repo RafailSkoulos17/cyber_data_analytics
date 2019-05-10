@@ -6,12 +6,18 @@ import seaborn as sns
 import pandas as pd
 
 
-def string_to_timestamp(date_string):  # convert time string to float value
+def string_to_timestamp(date_string):
+    '''
+    Function coverting a time string to a float timestamp
+    '''
     time_stamp = time.strptime(date_string, '%Y-%m-%d %H:%M:%S')
     return time.mktime(time_stamp)
 
 
 def create_initial_dataset():
+    '''
+    Function constructing the dataset from the initial csv file, keeping the categorical data
+    '''
     src = 'data_for_student_case.csv'
     ah = open(src, 'r')
     x_labeled = []
@@ -19,7 +25,7 @@ def create_initial_dataset():
     conversion_dict = {'SEK': 0.09703, 'MXN': 0.04358, 'AUD': 0.63161, 'NZD': 0.58377, 'GBP': 1.13355}
     ah.readline()  # skip first line
     for line_ah in ah:
-        if line_ah.strip().split(',')[9] == 'Refused':
+        if line_ah.strip().split(',')[9] == 'Refused':  # skip Refused transactions
             continue
         if 'na' in str(line_ah.strip().split(',')[14]).lower() or 'na' in str(line_ah.strip().split(',')[4].lower()):
             continue
@@ -54,11 +60,14 @@ def create_initial_dataset():
     df = pd.DataFrame(x_labeled)
     df.columns = ['issuercountry', 'txvariantcode', 'issuer_id', 'amount', 'currencycode',
                   'shoppercountry', 'interaction', 'verification', 'cvcresponse', 'creationdate_stamp',
-                  'accountcode', 'mail_id', 'ip_id', 'card_id', 'labels']
+                  'accountcode', 'mail_id', 'ip_id', 'card_id', 'labels']  # column names of the dataset
     df.to_csv('data_for_plots.csv')
 
 
 def make_boxplot(data):
+    '''
+    Function for the visualization task - Boxplot about the accountcode-to-amount feature relationship
+    '''
     ax = sns.boxplot(x="accountcode", y="amount", hue="labels", data=data,
                 palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
     handles, _ = ax.get_legend_handles_labels()
@@ -71,6 +80,9 @@ def make_boxplot(data):
 
 
 def make_boxplot_money(data):
+    '''
+    Function for the visualization task - Boxplot about the labels-to-amount relationship
+    '''
     ax = sns.boxplot(x="labels", y="amount", data=data,
                 palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
     ax.set_xticklabels(['benign', 'fraudulent'])
@@ -81,6 +93,9 @@ def make_boxplot_money(data):
 
 
 def make_barplot(data):
+    '''
+    Function for the visualization task - Barplot about the percentage of cvcresponce code per class
+    '''
     cvc_counts = (data.groupby(['labels'])['cvcresponse'].value_counts(normalize=True).rename('percentage').mul(100)
                          .reset_index().sort_values('cvcresponse'))
     ax = sns.barplot(x='cvcresponse', y='percentage', data=cvc_counts, hue='labels',
@@ -95,6 +110,9 @@ def make_barplot(data):
 
 
 def make_barplot_issued(data):
+    '''
+    Function for the visualization task - Barplot about the percentage of issuercountry code per class
+    '''
     cvc_counts = (data.groupby(['labels'])['issuercountry'].value_counts(normalize=True).rename('percentage').mul(100)
                          .reset_index())
     ax = sns.barplot(x='issuercountry', y='percentage', data=cvc_counts, hue='labels',
@@ -110,6 +128,9 @@ def make_barplot_issued(data):
 
 
 def make_boxplot_card_type(data):
+    '''
+    Function for the visualization task - Boxplot about the amount-to-card type feature relationship
+    '''
     ax = sns.boxplot(x="amount", y="txvariantcode", hue="labels", data=data,
                      palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
     handles, _ = ax.get_legend_handles_labels()
@@ -122,6 +143,9 @@ def make_boxplot_card_type(data):
 
 
 def make_boxplot_issuer_id(data):
+    '''
+    Function for the visualization task - Boxplot about the labels-to-issuer id relationship
+    '''
     ax = sns.boxplot(x="labels", y="issuer_id", data=data,
                      palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
     ax.set_xticklabels(['benign', 'fraudulent'])
@@ -132,6 +156,9 @@ def make_boxplot_issuer_id(data):
 
 
 def make_boxplot_ip(data):
+    '''
+    Function for the visualization task - Boxplot about the labels-to-ip id relationship
+    '''
     ax = sns.boxplot(x="labels", y="ip_id", data=data,
                      palette={0: mcolors.TABLEAU_COLORS['tab:blue'], 1: mcolors.TABLEAU_COLORS['tab:red']}, sym="")
     ax.set_xticklabels(['benign', 'fraudulent'])
@@ -142,7 +169,7 @@ def make_boxplot_ip(data):
 
 
 if __name__ == "__main__":
-    # create_initial_dataset()
+    # create_initial_dataset()  # to be used if the "data_for_plots.csv" is not already created
     data = pd.read_csv('data_for_plots.csv')
     plt.figure()
     make_boxplot(data)
