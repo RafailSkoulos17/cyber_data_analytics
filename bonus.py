@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import datetime
 import pickle
 import time
@@ -127,7 +125,8 @@ def create_dataset():
     ch_dfa = open(des, 'w')
 
     ch_dfa.write(
-        'issuercountry,txvariantcode,issuer_id,amount,currencycode,shoppercountry,interaction,verification,cvcresponse,creationdate,accountcode,mail_id,ip_id,card_id,label')
+        'issuercountry,txvariantcode,issuer_id,amount,currencycode,shoppercountry,interaction,verification,cvcresponse,'
+        'creationdate,accountcode,mail_id,ip_id,card_id,label')
     ch_dfa.write('\n')
 
     sentence = []
