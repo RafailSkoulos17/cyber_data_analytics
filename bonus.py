@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import datetime
+import pickle
 import time
 from copy import deepcopy
 
@@ -26,6 +27,9 @@ def string_to_timestamp(date_string):
 
 
 def create_dataset():
+    """
+    Create the dataset from the original csv file
+    """
     src = 'data_for_student_case.csv'
     ah = open(src, 'r')
     x = []  # contains features
@@ -138,6 +142,17 @@ def create_dataset():
 
 
 def make_clf(usx, usy, clf, clf_name, strategy='SMOTE', normalize=False, cutoff=0.5):
+    """
+    Makes classification with the given parameters and print the results
+    :param usx: features
+    :param usy: labels
+    :param clf: classifier
+    :param clf_name: name of the classifier
+    :param strategy: sampling strategy to be used
+    :param normalize: boolean to decide whether to normilize or not
+    :param cutoff: cutoff value for the classification threshold
+    :return:
+    """
     print('----------{0} with {1}----------'.format(clf_name, strategy))
     totalTP, totalFP, totalFN, totalTN = 0, 0, 0, 0
     total_y_test = []
@@ -204,6 +219,7 @@ def make_clf(usx, usy, clf, clf_name, strategy='SMOTE', normalize=False, cutoff=
                     y_predict[i] = 0
 
         TP, FP, FN, TN = 0, 0, 0, 0
+
         for i in range(len(y_predict)):
             if y_test[i] == 1 and y_predict[i] == 1:
                 TP += 1
@@ -213,11 +229,6 @@ def make_clf(usx, usy, clf, clf_name, strategy='SMOTE', normalize=False, cutoff=
                 FN += 1
             if y_test[i] == 0 and y_predict[i] == 0:
                 TN += 1
-        print('TP: ' + str(TP))
-        print('FP: ' + str(FP))
-        print('FN: ' + str(FN))
-        print('TN: ' + str(TN))
-        print(TP + TN + FP + FN)
         totalFN += FN
         totalFP += FP
         totalTN += TN
@@ -227,6 +238,7 @@ def make_clf(usx, usy, clf, clf_name, strategy='SMOTE', normalize=False, cutoff=
     print('TOTAL FP: ' + str(totalFP))
     print('TOTAL FN: ' + str(totalFN))
     print('TOTAL TN: ' + str(totalTN))
+
 
 # Below there are the functions that are used for the aggregated features
 def custom_aggr(cols, d):
@@ -515,13 +527,18 @@ def data_encoding(data, column_name, threshold):
 
 
 if __name__ == "__main__":
-    create_dataset()
-    filename = 'original_data_for_aggr.csv'
-    data = pd.read_csv(filename)
-    data = data.rename(columns={'amount': 'EuroAmount', 'shoppercountry': 'shoppercountrycode'})
+    # uncomment the following lines to create the dataset. I will take some time !!!
+    # create_dataset()
+    # filename = 'original_data_for_aggr.csv'
+    # data = pd.read_csv(filename)
+    # data = data.rename(columns={'amount': 'EuroAmount', 'shoppercountry': 'shoppercountrycode'})
+    #
+    # # add aggregated features
+    # data = aggregate_data(deepcopy(data))
 
-    # add aggregated features
-    data = aggregate_data(deepcopy(data))
+    # use this to load the aggregated features instead of calculating them again
+    with open('data_numerical.pickle', 'rb') as handle:
+        data = pickle.load(handle)
 
     # keep only useful features
     data = data.drop(['txvariantcode', 'EuroAmount', 'interaction','verification', 'creationdate', 'mail_id'], axis=1)
