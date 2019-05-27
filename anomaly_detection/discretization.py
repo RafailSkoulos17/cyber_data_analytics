@@ -9,6 +9,32 @@ from nltk import ngrams
 from statistics import mode
 
 
+def add_labels(df, test=True):
+    df.columns = df.columns.str.lstrip()
+    if test:
+        df['ATT_FLAG'] = 0
+        df.loc['2017-01-16 09': '2017-01-19 06', 'ATT_FLAG'] = 1
+        df.loc['2017-01-30 08':'2017-02-02 00',  'ATT_FLAG'] = 1
+        df.loc['2017-02-09 03': '2017-02-10 09', 'ATT_FLAG'] = 1
+        df.loc['2017-02-12 01': '2017-02-13 07', 'ATT_FLAG'] = 1
+        df.loc['2017-02-24 05': '2017-02-28 08', 'ATT_FLAG'] = 1
+        df.loc['2017-03-10 14': '2017-03-13 21', 'ATT_FLAG'] = 1
+        df.loc['2017-03-25 20': '2017-03-27 01', 'ATT_FLAG'] = 1
+        y = df['ATT_FLAG']  # separate the target values
+        df.drop(['ATT_FLAG'], axis=1, inplace=True)
+    else:
+        df['2016-09-13 23': '2016-09-16 00', 'ATT_FLAG'] = 1
+        df['2016-09-26 11': '2016-09-27 10', 'ATT_FLAG'] = 1
+        df['2016-10-09 16': '2016-10-11 20', 'ATT_FLAG'] = 1
+        df['2016-10-29 19': '2016-11-02 16', 'ATT_FLAG'] = 1
+        df['2016-11-26 17': '2016-11-29 04', 'ATT_FLAG'] = 1
+        df['2016-12-06 07': '2016-12-10 04', 'ATT_FLAG'] = 1
+        df['2016-12-14 15': '2016-12-19 04', 'ATT_FLAG'] = 1
+        y = df['ATT_FLAG']
+        df.drop(['ATT_FLAG'], axis=1, inplace=True)
+    return df, y
+
+
 def uncompress_labels(compressed_data, n, w):
     j = 0
     step = ceil(n/w)
@@ -57,14 +83,17 @@ def discretize_data(data, w, features, start_date, end_date, dataset, plotting):
     return sax_seqs
 
 
-def train_ngram(dsc_train, w):
+def train_normal_ngram(dsc_train, w):
     # states object
     states = {}
+    sequences = {}
 
     # get the ngrams for the training data
     all_ngrams = ngrams(list(dsc_train), w)
     cnt = 0.0
     prev = ""
+    prev_key = ""
+    seq = 0
     try:
         while True:
             # get the next gram
@@ -75,7 +104,19 @@ def train_ngram(dsc_train, w):
             key = prev + '-' + curr
 
             # check if the transition already existed
-            states[key] = states[key] + 1 if key in states else 1
+            states[key] = states[key] + 1 if key in states.keys() else 1
+
+            # check if greater subsequence
+            if prev_key != key:
+                if prev_key not in sequences.keys() and prev_key != '':
+                    sequences[prev_key] = seq
+                else:
+                    if sequences[prev_key] < seq:
+                        sequences[prev_key] = seq
+                seq = 1
+            else:
+                seq += 1
+
             cnt += 1
 
             # store the old key
@@ -83,16 +124,62 @@ def train_ngram(dsc_train, w):
     except StopIteration:
         pass
 
-    for key in states:
+    for key in states.keys():
         states[key] = states[key] / cnt
 
-    return states
+    return states, sequences
 
 
-def test_ngram(dsc_test, w, threshold, states):
+def train_abnormal_ngram(dsc_train, w, anomalies):
+    # states object
+    states = {}
+    is_anomaly = set()
+
+    # get the ngrams for the training data
+    all_ngrams = ngrams(list(dsc_train), w)
+    cnt = 0.0
+    prev = ""
+    j = 0
+    try:
+        while True:
+            # get the next gram
+            gram = all_ngrams.next()
+
+            # create key string
+            curr = ''.join(gram)
+            key = prev + '-' + curr
+
+            # check if the transition already existed
+            states[key] = states[key] + 1 if key in states.keys() else 1
+            cnt += 1
+
+            # check if anomaly and add it to the anomaly set
+            if anomalies[j]:
+                is_anomaly.add(key)
+
+            # store the old key
+            prev = curr
+            j += 1
+
+    except StopIteration:
+        pass
+
+    for key in states.keys():
+        states[key] = states[key] / cnt
+
+    threshold = 1.01
+    for s in is_anomaly:
+        threshold = states[s] if threshold > states[s] else threshold
+
+    return threshold
+
+
+def test_ngram(dsc_test, w, threshold, states, sequences):
     test_grams = ngrams(list(dsc_test), w)
     prev = ""
     anomalies = []
+    prev_key = ""
+    seq = 0
 
     try:
         while True:
@@ -106,12 +193,17 @@ def test_ngram(dsc_test, w, threshold, states):
             # check the odds of this transition
             if prev == "":
                 anomalies += [0]
-            elif key not in states:
+            elif key not in states.keys():
                 anomalies += [1]
             elif states[key] < threshold:
                 anomalies += [1]
+            elif seq > sequences[key]:
+                anomalies += [1]
             else:
                 anomalies += [0]
+
+            # update subsequence
+            seq = 1 if prev_key != key else seq + 1
 
             # store the old key
             prev = curr
@@ -121,29 +213,47 @@ def test_ngram(dsc_test, w, threshold, states):
     return anomalies
 
 
+def plot_anomalies(true_anomalies, predicted_anomalies, sensor):
+    fig, ax = plt.subplots()
+    ax.plot(true_anomalies.index, true_anomalies, label='True')
+    ax.plot(true_anomalies.index, predicted_anomalies, label='Predicted')
+    ax.xaxis.set_major_locator(mdates.DayLocator([5, 10, 15, 20, 25, 30]))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+    ax.set_ylabel('Attacks')
+    ax.grid()
+    plt.legend()
+    plt.title('Attacks for sensor {}'.format(sensor))
+    plt.xticks(rotation=45)
+    plt.xlabel("Date")
+    plt.savefig('plots/ngrams/attacks_%s.png' % sensor, bbox_inches='tight')
+
+
 if __name__ == '__main__':
     print('Reading datasets...')
     train_df1 = pd.read_csv('BATADAL_datasets/BATADAL_training_dataset1.csv', index_col=0, parse_dates=[0],
                             date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
+
     train_df2 = pd.read_csv('BATADAL_datasets/BATADAL_training_dataset2.csv', index_col=0, parse_dates=[0],
                             date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
-    y_train2 = list(train_df2['ATT_FLAG'])
+    train_df2, train2_anomalies = add_labels(train_df2, test=False)
+
     test_df = pd.read_csv('BATADAL_datasets/BATADAL_test_dataset.csv', index_col=0, parse_dates=[0],
                           date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
-    y_test = list(test_df['ATT_FLAG'])  # TODO: add the function that puts labels on test data
+    test_df, true_anomalies = add_labels(test_df)
 
     print('Discretizing the data with SAX...')
-    dsc_sensors = discretize_data(train_df1, 1000, ['L_T1', 'L_T4', 'L_T7', 'F_PU1', 'F_PU10'], '2014-09-01',
-                                  '2014-09-30', 'train1', True)
-    dsc_sensors_tr2 = discretize_data(train_df2, 1000, ['L_T1', 'L_T4', 'L_T7', 'F_PU1', 'F_PU10'], '2016-01-01',
-                                      '2016-01-30', 'train2', True)
-    dsc_sensors_tst = discretize_data(test_df, 1000, ['L_T1', 'L_T4', 'L_T7', 'F_PU1', 'F_PU10'], '2017-01-01',
-                                      '2017-01-30', 'test', True)
+    dsc_sensors = discretize_data(train_df1, 1000, ['L_T1', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7', 'F_PU1', 'F_PU4'
+        , 'F_PU10', 'P_J14', 'P_J422'], '2014-09-01', '2014-09-30', 'train1', True)
+    dsc_sensors_tr2 = discretize_data(train_df2, 1000, ['L_T1', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7', 'F_PU1', 'F_PU4'
+        , 'F_PU10', 'P_J14', 'P_J422'], '2016-07-04', '2016-07-30', 'train2', False)
+    dsc_sensors_tst = discretize_data(test_df, 1000, ['L_T1', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7', 'F_PU1', 'F_PU4'
+        , 'F_PU10', 'P_J14', 'P_J422'], '2017-01-04', '2017-01-30', 'test', False)
 
     print('N-gram calculation...')
     ngram_results = {}
     for sensor in dsc_sensors.keys():
-        states = train_ngram(dsc_sensors[sensor], 2)
-        threshold = min(states.values())
-        anomalies = test_ngram(dsc_sensors_tst[sensor], 2, threshold, states)
-        ngram_results[sensor] = uncompress_labels(anomalies, len(y_test), len(anomalies))
+        states, sequences = train_normal_ngram(dsc_sensors[sensor], 2)
+        threshold = train_abnormal_ngram(dsc_sensors_tr2[sensor], 2, train2_anomalies)
+        anomalies = test_ngram(dsc_sensors_tst[sensor], 2, threshold, states, sequences)
+        ngram_results[sensor] = uncompress_labels(anomalies, len(true_anomalies), len(anomalies))
+        plot_anomalies(true_anomalies, ngram_results[sensor], sensor)
