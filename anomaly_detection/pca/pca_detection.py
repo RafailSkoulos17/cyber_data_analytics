@@ -74,7 +74,8 @@ def pca_detect():
     plt.xlabel("Observation")
     plt.title("PCA with " + str(components) + " components")
     plt.legend([thresh_handle], ["Threshold"])
-    plt.show()
+    plt.savefig('../plots/pca/residuals_test.png', bbox_inches='tight')
+    # plt.show()
 
     # plot attacks detected
     predicted_anomalies = [1 if res > threshold else 0 for res in res_norm]

@@ -174,4 +174,5 @@ def plot_anomalies(true_anomalies, predicted_anomalies):
     plt.title('Attacks')
     plt.xticks(rotation=45)
     plt.xlabel("Date")
-    plt.show()
+    plt.savefig('../plots/pca/attacks_detected.png', bbox_inches='tight')
+    # plt.show()

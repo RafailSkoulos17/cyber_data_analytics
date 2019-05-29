@@ -24,7 +24,8 @@ def plot_cumulative_explained_var(dataset):
     plt.plot(x_axis, total_var)
     plt.tight_layout()
     plt.grid()
-    plt.show()
+    plt.savefig('../plots/pca/pca_var.png', bbox_inches='tight')
+    # plt.show()
 
 
 def get_num_of_components(dataset, explained_var):
