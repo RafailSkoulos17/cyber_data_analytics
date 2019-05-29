@@ -1,11 +1,15 @@
 import itertools
+import warnings
+
 from sklearn.decomposition import PCA
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from pca.tune_pca import get_num_of_components
+from pca.tune_pca import get_num_of_components, get_threshold
 from pca.utils import read_datasets, get_score, plot_anomalies
+
+warnings.filterwarnings("ignore")
 
 
 def pca_detect():
@@ -29,27 +33,35 @@ def pca_detect():
     residuals = pca_train_data1 - pca.inverse_transform(pca.transform(pca_train_data1))
     res_norm = np.sqrt(np.square(residuals).sum(axis=1))
     # find threshold for outlier detection => mean + std
-    threshold = np.mean(res_norm) + np.std(res_norm)  # increase std*(2 or 3), increases TP by 30 and FP by 50
+    threshold = np.mean(res_norm) + 3* np.std(res_norm)  # increase std*(2 or 3), increases TP by 30 and FP by 50
+    # threshold =1
     print('Threshold is {}'.format(threshold))
     # find outliers
     predicted_positives = np.where(res_norm > threshold)[0]
     # uncomment to plot residuals and point outliers
-    # plt.plot(res_norm)
-    # thresh_handle = plt.plot_date([res_norm.index[0], res_norm.index[-1]], [threshold, threshold], fmt='-', color='r')
-    # plt.ylabel("Square Prediction Error")
-    # plt.xlabel("Observation")
-    # plt.title("Application of PCA to training data with " + str(components) + " normal components")
-    # plt.legend([thresh_handle], ["Sample threshold"])
+    plt.plot(res_norm)
+    thresh_handle = plt.plot_date([res_norm.index[0], res_norm.index[-1]], [threshold, threshold], fmt='-', color='r')
+    plt.ylabel("Square Prediction Error")
+    plt.xlabel("Observation")
+    plt.title("Application of PCA to training data with " + str(components) + " normal components")
+    plt.legend([thresh_handle], ["Sample threshold"])
+    plt.savefig('../plots/pca/train_outliers.png', bbox_inches='tight')
     # plt.show()
+    print("Shape before is {}".format(str(pca_train_data1.shape)))
     pca_train_data1_without_outliers = pca_train_data1.drop(pca_train_data1.index[predicted_positives])
+    print("Shape after is {}".format(str(pca_train_data1_without_outliers.shape)))
 
     # we use training dataset 2 to find the optimal classification threshold
-    pca = PCA(n_components=components)
-    pca.fit(pca_train_data1_without_outliers)
-    residuals = pca_test_data - pca.inverse_transform(pca.transform(pca_test_data))
-    res_norm = np.sqrt(np.square(residuals).sum(axis=1))
-    total_errors = [err for i, err in enumerate(res_norm) if train_y2[i] == 1]
-    threshold = np.max(total_errors) # computed classification threshold
+    pca = PCA(n_components=pca_train_data2.shape[1])
+    pca.fit(pca_train_data2)
+    components_dataset2 = get_num_of_components(pca_train_data2, 0.95)
+    threshold = get_threshold(pca, components_dataset2, conf=0.95)
+
+    # another way to get a threshold
+    # residuals = pca_train_data2 - pca.inverse_transform(pca.transform(pca_train_data2))
+    # res_norm = np.sqrt(np.square(residuals).sum(axis=1))
+    # total_errors = [err for i, err in enumerate(res_norm) if train_y2[i] == 1]
+    # threshold = np.max(total_errors) # computed classification threshold
 
     # apply PCA for test dataset
     pca = PCA(n_components=components)

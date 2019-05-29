@@ -47,6 +47,32 @@ def get_num_of_components(dataset, explained_var):
     return n_components
 
 
+def get_threshold(pca, components, conf):
+    """
+    Calculate the threshold, according to the paper "Diagnosing Network-Wide Traffic Anomalies"
+    :param pca: PCA fitted to the tuning dataset
+    :param components: number of components found by the cumulative variance
+    :return: Classification threshold
+    """
+    sorted_eigen = np.sort(pca.explained_variance_)
+    sorted_eigen = sorted_eigen[-1::-1]
+
+    lambda1 = sorted_eigen
+    lambda2 = np.power(sorted_eigen, 2)
+    lambda3 = np.power(sorted_eigen, 3)
+
+    fi1 = sum(lambda1[components:])
+    fi2 = sum(lambda2[components:])
+    fi3 = sum(lambda3[components:])
+    h0 = 1 - 2.0 * fi1 * fi3 / (3 * (fi2 ** 2))
+    Ca = 1 - conf
+    threshold = fi1 * np.power((1.0 * Ca * np.sqrt(2 * fi2 * (h0 ** 2)) / fi1)
+                               + 1 + (1.0 * fi2 * h0 * (h0 - 1) / (fi1 ** 2)), 1.0 / h0)
+    # print
+    # fi1, fi2, fi3, h0, threshold
+    return threshold
+
+
 if __name__ == '__main__':
     # read all datasets
     scaled_df1, train_y1, scaled_df2, train_y2, scaled_test_df, y = read_datasets()

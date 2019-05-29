@@ -7,6 +7,10 @@ from sklearn.preprocessing import StandardScaler
 
 
 def read_datasets():
+    """
+    Reas the 3 datasets.
+    :return: the 3 datasets and their labels
+    """
     # read training 1 dataset
     train_df1 = pd.read_csv('../BATADAL_datasets/BATADAL_training_dataset1.csv', index_col=0, parse_dates=[0],
                             date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
