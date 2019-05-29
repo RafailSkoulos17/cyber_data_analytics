@@ -2,9 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
-from saxpy.sax import sax_by_chunking
 from saxpy.znorm import znorm
-from math import ceil
 from nltk import ngrams
 from anomaly_detection import sax
 import warnings
@@ -51,13 +49,16 @@ def confusion_results(predicted, true):
     return TP, FP, TN, FN
 
 
-def uncompress_labels(compressed_data, n, w):
-    j = 0
-    step = ceil(n/w)
+def uncompress_labels(compressed_data, indices):
     uncompressed = []
     for i in range(len(compressed_data)):
-        uncompressed += [compressed_data[i]] * min(step, n - j)
-        j += step
+        if i < len(compressed_data)-1:
+            if indices[i][1] != indices[i+1][0]:
+                if compressed_data[i] > compressed_data[i+1]:
+                    indices[i + 1][0] += 1
+                else:
+                    indices[i][1] -= 1
+        uncompressed += [compressed_data[i]] * (indices[i][1]-indices[i][0])
     return uncompressed
 
 
@@ -66,15 +67,16 @@ def discretize_data(data, w, features, start_date, end_date, dataset, plotting):
     symbol_to_number = {'a': -1.5, 'b': -0.75, 'c': 0, 'd': 0.75, 'e': 1.5}
     number_to_symbol = {'0': 'a', '1': 'b', '2': 'c', '3': 'd', '4': 'e'}
     sax_seqs = {}
+    sax_indices = {}
     for feature in features:
         print('------------------------------------- Discretizing %s -------------------------------------' % feature)
         # sax_str = sax_by_chunking(np.array(data[feature]), w, alphabet)
-        sax_str, _ = sax.to_letter_rep(np.array(data[feature]), w, alphabet)
+        sax_str, real_indices = sax.to_letter_rep(np.array(data[feature]), w, alphabet)
         sax_seqs[feature] = sax_str
-
+        sax_indices[feature] = real_indices
         if plotting:
             normalized_signal = znorm(np.array(data[feature]))
-            discrete = uncompress_labels(sax_str, len(normalized_signal), w)
+            discrete = uncompress_labels(sax_str, real_indices)
             discrete = [symbol_to_number[number_to_symbol[d]] for d in discrete]
 
             fig = plt.figure()
@@ -91,7 +93,7 @@ def discretize_data(data, w, features, start_date, end_date, dataset, plotting):
             plt.grid()
             plt.legend(loc='lower right')
             plt.savefig('plots/sax/%s_discretization_%s.png' % (dataset, feature), bbox_inches='tight')
-    return sax_seqs
+    return sax_seqs, sax_indices
 
 
 def train_ngram(dsc_train, w):
@@ -126,14 +128,10 @@ def train_ngram(dsc_train, w):
     return states
 
 
-def test_ngram(dsc_test, w, threshold, threshold1, states, states1):
+def test_ngram(dsc_test, w, threshold, states, states1):
     test_grams = ngrams(dsc_test, w)
     prev = ""
     anomalies = []
-
-    stat_1 = 0
-    stat_2 = 0
-    stat_3 = 0
 
     try:
         while True:
@@ -148,13 +146,8 @@ def test_ngram(dsc_test, w, threshold, threshold1, states, states1):
             if prev == "":
                 anomalies += [0]
             elif key not in states.keys() and key not in states1.keys():
-                stat_1 += 1
-                anomalies += [1]
-            elif key in states.keys() and key in states1.keys() and abs(states1[key] - states[key]) > threshold1:
-                stat_3 += 1
                 anomalies += [1]
             elif key in states1.keys() and states1[key] < threshold:
-                stat_2 += 1
                 anomalies += [1]
             else:
                 anomalies += [0]
@@ -164,26 +157,42 @@ def test_ngram(dsc_test, w, threshold, threshold1, states, states1):
     except StopIteration:
         pass
 
-    print('not existing: ', stat_1)
-    print('low: ', stat_2)
-    print('big diff: ', stat_3)
-
-    return anomalies
+    return anomalies + [0]
 
 
 def plot_anomalies(true_anomalies, predicted_anomalies, sensor):
-    fig, ax = plt.subplots()
-    ax.fill_between(true_anomalies.index, true_anomalies, label='True', alpha=0.5)
-    ax.fill_between(true_anomalies.index, predicted_anomalies, label='Predicted', alpha=0.5)
-    ax.xaxis.set_major_locator(mdates.DayLocator([5, 10, 15, 20, 25, 30]))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
-    ax.set_ylabel('Attacks')
-    ax.grid()
-    plt.legend()
-    plt.title('Attacks for sensor {}'.format(sensor))
-    plt.xticks(rotation=45)
-    plt.xlabel("Date")
-    plt.savefig('plots/ngrams/attacks_%s.png' % sensor, bbox_inches='tight')
+    if sensor == 'considered':
+        final_predictions = np.array([0]*len(true_anomalies))
+        for pred in predicted_anomalies.values():
+            final_predictions = final_predictions | np.array(pred)
+        fig, ax = plt.subplots()
+        ax.fill_between(true_anomalies.index, true_anomalies, label='True', alpha=0.5)
+        ax.fill_between(true_anomalies.index, list(final_predictions), label='Predicted', alpha=0.5)
+        ax.xaxis.set_major_locator(mdates.DayLocator([5, 10, 15, 20, 25, 30]))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+        ax.set_ylabel('Attacks')
+        ax.grid()
+        plt.legend()
+        plt.title('Attacks for {} sensors'.format(sensor))
+        plt.xticks(rotation=45)
+        plt.xlabel("Date")
+        plt.savefig('plots/ngrams/attacks_%s.png' % sensor, bbox_inches='tight')
+        TP, FP, TN, FN = confusion_results(final_predictions, list(true_anomalies))
+        print('------------------- Total Test results -------------------')
+        print('TP: %d, FP: %d, TN: %d, FN: %d' % (TP, FP, TN, FN))
+    else:
+        fig, ax = plt.subplots()
+        ax.fill_between(true_anomalies.index, true_anomalies, label='True', alpha=0.5)
+        ax.fill_between(true_anomalies.index, predicted_anomalies, label='Predicted', alpha=0.5)
+        ax.xaxis.set_major_locator(mdates.DayLocator([5, 10, 15, 20, 25, 30]))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+        ax.set_ylabel('Attacks')
+        ax.grid()
+        plt.legend()
+        plt.title('Attacks for sensor {}'.format(sensor))
+        plt.xticks(rotation=45)
+        plt.xlabel("Date")
+        plt.savefig('plots/ngrams/attacks_%s.png' % sensor, bbox_inches='tight')
 
 
 if __name__ == '__main__':
@@ -201,12 +210,12 @@ if __name__ == '__main__':
 
     print('Discretizing the data with SAX...')
     # ['L_T1', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7', 'F_PU1', 'F_PU4', 'F_PU10', 'P_J14', 'P_J422']
-    dsc_sensors = discretize_data(train_df1, 2000, ['L_T7'], '2014-09-01', '2014-09-30', 'train1',
-                                  True)
-    dsc_sensors_tr2 = discretize_data(train_df2, 1000, ['L_T7'], '2016-07-04', '2016-07-30', 'train2',
-                                      False)
-    dsc_sensors_tst = discretize_data(test_df, 550, ['L_T7'], '2017-01-04', '2017-01-30', 'test',
-                                      False)
+    dsc_sensors, dsc_indices = discretize_data(train_df1, 500, ['L_T1', 'F_PU1', 'F_PU3', 'F_V2'
+        , 'P_J289', 'P_J14', 'P_J422'], '2014-09-01', '2014-09-30', 'train1', True)
+    dsc_sensors_tr2, dsc_indices_tr2 = discretize_data(train_df2, 250, ['L_T1', 'F_PU1', 'F_PU3', 'F_V2'
+        , 'P_J289', 'P_J14', 'P_J422'], '2016-07-04', '2016-07-30', 'train2', False)
+    dsc_sensors_tst, dsc_indices_tst = discretize_data(test_df, 125, ['L_T1', 'F_PU1', 'F_PU3', 'F_V2'
+        , 'P_J289', 'P_J14', 'P_J422'], '2017-01-04', '2017-01-30', 'test', False)
 
     print('N-gram calculation...')
     ngram_results = {}
@@ -214,11 +223,10 @@ if __name__ == '__main__':
         print('------------------------------------- Training on %s -------------------------------------' % sensor)
         states = train_ngram(dsc_sensors[sensor], 2)
         states_1 = train_ngram(dsc_sensors_tr2[sensor], 2)
-        threshold = 0.0015
-        threshold1 = 0.025
-        anomalies = test_ngram(dsc_sensors_tst[sensor], 2, threshold, threshold1, states, states_1)
-        ngram_results[sensor] = uncompress_labels(anomalies, len(true_anomalies), len(anomalies))
+        threshold = min(states.values())
+        anomalies = test_ngram(dsc_sensors_tst[sensor], 2, threshold, states, states_1)
+        ngram_results[sensor] = uncompress_labels(anomalies, dsc_indices_tst[sensor])
         TP, FP, TN, FN = confusion_results(ngram_results[sensor], list(true_anomalies))
-        print('------------------- Test results -------------------')
-        print('TP: %d, FP: %d, TN: %d, FN: %d' % (TP, FP, TN, FN))
-        plot_anomalies(true_anomalies, ngram_results[sensor], sensor)
+        # print('------------------- Test results -------------------')
+        # print('TP: %d, FP: %d, TN: %d, FN: %d' % (TP, FP, TN, FN))
+    plot_anomalies(true_anomalies, ngram_results, 'considered')

@@ -53,7 +53,7 @@ def PAA(x, word_size):
     while chunk_start <= n - step:
         chunk = np.array(x[chunk_start:int(chunk_start + step)])
         approximated.append(np.mean(chunk))
-        indices.append((chunk_start, int(chunk_start + step)))
+        indices.append([chunk_start, int(chunk_start + step)])
         i += 1
         chunk_start = int(i * step_float)
     return np.array(approximated), indices
