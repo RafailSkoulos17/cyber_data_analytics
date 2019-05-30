@@ -1,6 +1,5 @@
 import pandas as pd
 from anomaly_detection.discretization import add_labels, confusion_results
-from anomaly_detection.pca.pca_detection import pca_detect
 from anomaly_detection.pca.utils import get_score
 import pickle
 import numpy as np
@@ -27,11 +26,12 @@ def check_first_occurrence(predicted, anomaly_blocks):
     attacks = 0
     time_init = {}
     for ind, p in enumerate(predicted):
-        membership = list(map(lambda x: x[0] <= p < x[1], anomaly_blocks))
-        if True in membership:
-            if membership.index(True) not in time_init.keys():
-                time_init[membership.index(True)] = ind
-                attacks += 1
+        if p == 1:
+            membership = list(map(lambda x: x[0] <= ind < x[1], anomaly_blocks))
+            if True in membership:
+                if membership.index(True) not in time_init.keys():
+                    time_init[membership.index(True)] = ind
+                    attacks += 1
     return attacks, time_init
 
 
@@ -54,7 +54,7 @@ def pointwise_precision_recall(predicted, true):
             precision += [TP/(TP+FP)]
 
         if not TP and not FN:
-            precision += [1]
+            recall += [1]
         else:
             recall += [TP/(TP+FN)]
     return precision, recall
@@ -68,41 +68,42 @@ if __name__ == '__main__':
     with open('discrete_all.pickle', 'rb') as handle:
         ngrams_results = pickle.load(handle)
 
-    pca_results = pca_detect()
+    with open('pca_all.pickle', 'rb') as handle:
+        pca_results = pickle.load(handle)
 
-    with open('arma_all.pickle', 'rb') as handle:
+    with open('arma/arma_all.pickle', 'rb') as handle:
         arma_results = pickle.load(handle)
+
+    anomaly_blocks = find_anomaly_blocks(list(true_anomalies))
 
     print('------------------------ ARMA Results per sensor ------------------------')
     for sensor in arma_results.keys():
-        TP, FP, TN, FN = confusion_results(arma_results[sensor], list(true_anomalies))
+        TP, FP, FN, TN, _, _, Sttd, Scm, S = get_score([i for i, val in enumerate(arma_results[sensor]) if val == 1],
+                                                       [i for i, val in enumerate(list(true_anomalies)) if val == 1],
+                                                       list(true_anomalies))
+        attacks, _ = check_first_occurrence(arma_results[sensor], anomaly_blocks)
         print('-----------------------> %s <-----------------------' % sensor)
         print('True positive: ', TP)
         print('False positive: ', FP)
         print('True negative: ', TN)
         print('False negative: ', FN)
-        attacks, _ = check_first_occurrence(arma_results[sensor], find_anomaly_blocks(arma_results[sensor]))
         print('Attacks identified: ', attacks)
-        _, _, _, _, _, _, Sttd, Scm, S = get_score([i for i, val in enumerate(arma_results[sensor]) if val == 1],
-                                                   [i for i, val in enumerate(list(true_anomalies)) if val == 1],
-                                                   list(true_anomalies))
-        print('Sttd: ', Sttd)  # TODO: Check Sttd
+        print('Sttd: ', Sttd)
         print('Scm: ', Scm)
         print('S: ', S)
 
     print('------------------------ N-grams Results per sensor ------------------------')
     for sensor in ngrams_results.keys():
-        TP, FP, TN, FN = confusion_results(ngrams_results[sensor], list(true_anomalies))
+        TP, FP, FN, TN, _, _, Sttd, Scm, S = get_score([i for i, val in enumerate(ngrams_results[sensor]) if val == 1],
+                                                       [i for i, val in enumerate(list(true_anomalies)) if val == 1],
+                                                       list(true_anomalies))
+        attacks, _ = check_first_occurrence(ngrams_results[sensor], anomaly_blocks)
         print('-----------------------> %s <-----------------------' % sensor)
         print('True positive: ', TP)
         print('False positive: ', FP)
         print('True negative: ', TN)
         print('False negative: ', FN)
-        attacks, _ = check_first_occurrence(ngrams_results[sensor], find_anomaly_blocks(ngrams_results[sensor]))
         print('Attacks identified: ', attacks)
-        _, _, _, _, _, _, Sttd, Scm, S = get_score([i for i, val in enumerate(ngrams_results[sensor]) if val == 1],
-                                                   [i for i, val in enumerate(list(true_anomalies)) if val == 1],
-                                                   list(true_anomalies))
         print('Sttd: ', Sttd)
         print('Scm: ', Scm)
         print('S: ', S)
@@ -124,9 +125,9 @@ if __name__ == '__main__':
         [i for i, val in enumerate(list(true_anomalies)) if val == 1],
         list(true_anomalies))
 
-    attacks_arma, _ = check_first_occurrence(arma_merged, find_anomaly_blocks(arma_merged))
-    attacks_ngrams, _ = check_first_occurrence(ngrams_merged, find_anomaly_blocks(ngrams_merged))
-    attacks_pca, _ = check_first_occurrence(pca_results, find_anomaly_blocks(pca_results))
+    attacks_arma, _ = check_first_occurrence(list(arma_merged), anomaly_blocks)
+    attacks_ngrams, _ = check_first_occurrence(list(ngrams_merged), anomaly_blocks)
+    attacks_pca, _ = check_first_occurrence(pca_results, anomaly_blocks)
 
     print('------------------------ All sensors considered ------------------------')
     print('True positive: ARMA -> %d N-grams -> %d PCA -> %d' % (tp_arma, tp_ngrams, tp_pca))
@@ -134,12 +135,12 @@ if __name__ == '__main__':
     print('True negative: ARMA -> %d N-grams -> %d PCA -> %d' % (tn_arma, tn_ngrams, tn_pca))
     print('False negative: ARMA -> %d N-grams -> %d PCA -> %d' % (fn_arma, fn_ngrams, fn_pca))
     print('Attacks detected: ARMA -> %d N-grams -> %d PCA -> %d' % (attacks_arma, attacks_ngrams, attacks_pca))
-    print('Sttd: ARMA -> %d N-grams -> %d PCA -> %d' % (Sttd_arma, Sttd_ngrams, Sttd_pca))
-    print('Scm: ARMA -> %d N-grams -> %d PCA -> %d' % (Scm_arma, Scm_ngrams, Scm_pca))
-    print('S: ARMA -> %d N-grams -> %d PCA -> %d' % (S_arma, S_ngrams, S_pca))
+    print('Sttd: ARMA -> %.3f N-grams -> %.3f PCA -> %.3f' % (Sttd_arma, Sttd_ngrams, Sttd_pca))
+    print('Scm: ARMA -> %.3f N-grams -> %.3f PCA -> %.3f' % (Scm_arma, Scm_ngrams, Scm_pca))
+    print('S: ARMA -> %.3f N-grams -> %.3f PCA -> %.3f' % (S_arma, S_ngrams, S_pca))
 
-    prec_arma, rec_arma = pointwise_precision_recall(arma_merged, list(true_anomalies))
-    prec_ngrams, rec_ngrams = pointwise_precision_recall(ngrams_merged, list(true_anomalies))
+    prec_arma, rec_arma = pointwise_precision_recall(list(arma_merged), list(true_anomalies))
+    prec_ngrams, rec_ngrams = pointwise_precision_recall(list(ngrams_merged), list(true_anomalies))
     prec_pca, rec_pca = pointwise_precision_recall(pca_results, list(true_anomalies))
 
     fig = plt.figure()
@@ -149,6 +150,7 @@ if __name__ == '__main__':
     ax.plot(pd.DataFrame(prec_pca, index=true_anomalies.index), label='PCA')
     ax.xaxis.set_major_locator(mdates.DayLocator([5, 10, 15, 20, 25, 30]))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+    plt.yticks(np.arange(0, 1.1, 0.1))
     plt.xlabel("time")
     plt.ylabel('Precision')
     plt.xticks(rotation=45)
@@ -163,6 +165,7 @@ if __name__ == '__main__':
     ax.plot(pd.DataFrame(rec_pca, index=true_anomalies.index), label='PCA')
     ax.xaxis.set_major_locator(mdates.DayLocator([5, 10, 15, 20, 25, 30]))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+    plt.yticks(np.arange(0, 1.1, 0.1))
     plt.xlabel("time")
     plt.ylabel('Recall')
     plt.xticks(rotation=45)

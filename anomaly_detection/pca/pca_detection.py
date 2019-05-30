@@ -1,14 +1,10 @@
-import itertools
-import warnings
-
 from sklearn.decomposition import PCA
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
 from anomaly_detection.pca.tune_pca import get_num_of_components, get_threshold
 from anomaly_detection.pca.utils import read_datasets, get_score, plot_anomalies
-
+import pickle
+import warnings
 warnings.filterwarnings("ignore")
 
 
@@ -96,4 +92,6 @@ def pca_detect():
 
 
 if __name__ == '__main__':
-    pca_detect()
+    predicted_anomalies = pca_detect()
+    with open('../pca_all.pickle', 'wb') as handle:
+        pickle.dump(predicted_anomalies, handle, protocol=pickle.HIGHEST_PROTOCOL)
