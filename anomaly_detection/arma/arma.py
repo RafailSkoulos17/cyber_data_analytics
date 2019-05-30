@@ -126,7 +126,7 @@ total_anomalies = pd.Series([0 for i in range(len(pd.Series(scaled_test_df["L_T2
 
 # coluns to drop, status signals
 drop_columns = ['S_PU1', 'S_PU2', 'S_PU3', 'S_PU4', 'S_PU5', 'S_PU6', 'S_PU7', 'S_PU8', 'S_PU9', 'S_PU10', 'S_PU11',
-                'S_V2'] + ['L_T1', 'L_T2', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7', 'F_PU1', 'F_PU2']
+                'S_V2']
 
 # drop columns on all the 3 datasets
 scaled_df1.drop(drop_columns, axis=1, inplace=True)
@@ -141,12 +141,9 @@ with open("best_order.json", "r") as f:
 
 all_predictions = {}
 
-for sensor in ['F_PU3', 'F_PU5', 'F_PU9']:
-# for sensor in sensors:
+for sensor in sensors:
     p = best_orders[sensor][0]
     q = best_orders[sensor][1]
-    p=1,
-    q=1
     train_ts = pd.Series(scaled_df1[sensor], index=scaled_df1.index, dtype=np.float)
     train_2_ts = pd.Series(scaled_df2[sensor], index=scaled_df2.index, dtype=np.float)
     test_ts = pd.Series(scaled_test_df[sensor], index=scaled_test_df.index,dtype=np.float )
@@ -197,11 +194,11 @@ for sensor in ['F_PU3', 'F_PU5', 'F_PU9']:
     print('TP={0}, FP={1}'.format(tp, fp))
     # plot_anomalies(true_anomalies, predicted_anomalies, sensor)
     all_predictions[sensor] = predicted_anomalies
-    with open("new_arma_{}.pickle".format(sensor), "wb") as handle:
+    with open("arma_{}.pickle".format(sensor), "wb") as handle:
         pickle.dump(predicted_anomalies, handle, protocol=pickle.HIGHEST_PROTOCOL)
     # total_anomalies = total_anomalies | predicted_anomalies
 
-with open('new_arma_all.pickle', 'wb') as handle:
+with open('arma_all.pickle', 'wb') as handle:
     pickle.dump(all_predictions, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
