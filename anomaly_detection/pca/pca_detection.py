@@ -53,8 +53,8 @@ def pca_detect():
 
     # we use training dataset 2 to find the optimal classification threshold
     pca = PCA(n_components=pca_train_data2.shape[1])
-    pca.fit(pca_train_data2)
-    components_dataset2 = get_num_of_components(pca_train_data2, 0.95)
+    pca.fit(pca_train_data1_without_outliers)
+    components_dataset2 = get_num_of_components(pca_train_data1_without_outliers, 0.95)
     threshold = get_threshold(pca, components_dataset2, conf=0.95)
 
     # another way to get a threshold

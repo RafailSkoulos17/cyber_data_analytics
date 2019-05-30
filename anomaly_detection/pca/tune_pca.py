@@ -28,7 +28,7 @@ def plot_cumulative_explained_var(dataset):
     # plt.show()
 
 
-def get_num_of_components(dataset, explained_var):
+def get_num_of_components(dataset, conf):
     """
     Finds the minimum number of principal components that provide the given explained variance
     :param dataset: Dataset to apply PCA
@@ -43,7 +43,7 @@ def get_num_of_components(dataset, explained_var):
     # compute cumulative explained variance as the components are increasing
     total_var = pca.explained_variance_ratio_.cumsum()
     # find minimum number of principal components that provide the given explained variance
-    n_components = [i + 1 for i, var in enumerate(total_var) if var > explained_var][0]
+    n_components = [i + 1 for i, var in enumerate(total_var) if var > conf][0]
     return n_components
 
 
