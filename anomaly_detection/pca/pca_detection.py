@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from pca.tune_pca import get_num_of_components, get_threshold
-from pca.utils import read_datasets, get_score, plot_anomalies
+from anomaly_detection.pca.tune_pca import get_num_of_components, get_threshold
+from anomaly_detection.pca.utils import read_datasets, get_score, plot_anomalies
 
 warnings.filterwarnings("ignore")
 
@@ -92,6 +92,7 @@ def pca_detect():
     # plot attacks detected
     predicted_anomalies = [1 if res > threshold else 0 for res in res_norm]
     plot_anomalies(y, predicted_anomalies)
+    return predicted_anomalies
 
 
 if __name__ == '__main__':

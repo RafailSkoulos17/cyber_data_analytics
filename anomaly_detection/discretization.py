@@ -5,6 +5,7 @@ import numpy as np
 from saxpy.znorm import znorm
 from nltk import ngrams
 from anomaly_detection import sax
+import pickle
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -161,7 +162,7 @@ def test_ngram(dsc_test, w, threshold, states, states1):
 
 
 def plot_anomalies(true_anomalies, predicted_anomalies, sensor):
-    if sensor == 'considered':
+    if sensor == 'considered' or sensor == 'all':
         final_predictions = np.array([0]*len(true_anomalies))
         for pred in predicted_anomalies.values():
             final_predictions = final_predictions | np.array(pred)
@@ -209,13 +210,31 @@ if __name__ == '__main__':
     test_df, true_anomalies = add_labels(test_df)
 
     print('Discretizing the data with SAX...')
-    # ['L_T1', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7', 'F_PU1', 'F_PU4', 'F_PU10', 'P_J14', 'P_J422']
-    dsc_sensors, dsc_indices = discretize_data(train_df1, 500, ['L_T1', 'F_PU1', 'F_PU3', 'F_V2'
-        , 'P_J289', 'P_J14', 'P_J422'], '2014-09-01', '2014-09-30', 'train1', True)
-    dsc_sensors_tr2, dsc_indices_tr2 = discretize_data(train_df2, 250, ['L_T1', 'F_PU1', 'F_PU3', 'F_V2'
-        , 'P_J289', 'P_J14', 'P_J422'], '2016-07-04', '2016-07-30', 'train2', False)
-    dsc_sensors_tst, dsc_indices_tst = discretize_data(test_df, 125, ['L_T1', 'F_PU1', 'F_PU3', 'F_V2'
-        , 'P_J289', 'P_J14', 'P_J422'], '2017-01-04', '2017-01-30', 'test', False)
+    # ['L_T1', 'L_T2', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7', 'F_PU1', 'F_PU2', 'F_PU3', 'F_PU4', 'F_PU5', 'F_PU6',
+    # 'F_PU7', 'F_PU8', 'F_PU9', 'F_PU10', 'F_PU11', 'F_V2', 'P_J280', 'P_J269', 'P_J300', 'P_J256', 'P_J289', 'P_J415',
+    # 'P_J302', 'P_J306', 'P_J307', 'P_J317', 'P_J14', 'P_J422']
+    dsc_sensors, dsc_indices = discretize_data(train_df1, 500, ['L_T1', 'L_T2', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7',
+                                                                'F_PU1', 'F_PU2', 'F_PU3', 'F_PU4', 'F_PU5', 'F_PU6',
+                                                                'F_PU7', 'F_PU8', 'F_PU9', 'F_PU10', 'F_PU11', 'F_V2',
+                                                                'P_J280', 'P_J269', 'P_J300', 'P_J256', 'P_J289',
+                                                                'P_J415', 'P_J302', 'P_J306', 'P_J307', 'P_J317',
+                                                                'P_J14', 'P_J422'], '2014-09-01', '2014-09-30',
+                                               'train1', False)
+    dsc_sensors_tr2, dsc_indices_tr2 = discretize_data(train_df2, 250, ['L_T1', 'L_T2', 'L_T3', 'L_T4', 'L_T5', 'L_T6',
+                                                                        'L_T7', 'F_PU1', 'F_PU2', 'F_PU3', 'F_PU4',
+                                                                        'F_PU5', 'F_PU6', 'F_PU7', 'F_PU8', 'F_PU9',
+                                                                        'F_PU10', 'F_PU11', 'F_V2', 'P_J280', 'P_J269',
+                                                                        'P_J300', 'P_J256', 'P_J289', 'P_J415',
+                                                                        'P_J302', 'P_J306', 'P_J307', 'P_J317', 'P_J14',
+                                                                        'P_J422'], '2016-07-04', '2016-07-30', 'train2',
+                                                       False)
+    dsc_sensors_tst, dsc_indices_tst = discretize_data(test_df, 125, ['L_T1', 'L_T2', 'L_T3', 'L_T4', 'L_T5', 'L_T6',
+                                                                      'L_T7', 'F_PU1', 'F_PU2', 'F_PU3', 'F_PU4',
+                                                                      'F_PU5', 'F_PU6', 'F_PU7', 'F_PU8', 'F_PU9',
+                                                                      'F_PU10', 'F_PU11', 'F_V2', 'P_J280', 'P_J269',
+                                                                      'P_J300', 'P_J256', 'P_J289', 'P_J415', 'P_J302',
+                                                                      'P_J306', 'P_J307', 'P_J317', 'P_J14', 'P_J422'],
+                                                       '2017-01-04', '2017-01-30', 'test', False)
 
     print('N-gram calculation...')
     ngram_results = {}
@@ -229,4 +248,6 @@ if __name__ == '__main__':
         TP, FP, TN, FN = confusion_results(ngram_results[sensor], list(true_anomalies))
         # print('------------------- Test results -------------------')
         # print('TP: %d, FP: %d, TN: %d, FN: %d' % (TP, FP, TN, FN))
-    plot_anomalies(true_anomalies, ngram_results, 'considered')
+    plot_anomalies(true_anomalies, ngram_results, 'all')
+    with open('discrete_all.pickle', 'wb') as handle:
+        pickle.dump(ngram_results, handle, protocol=pickle.HIGHEST_PROTOCOL)

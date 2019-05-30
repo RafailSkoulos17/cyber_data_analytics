@@ -1,7 +1,7 @@
 from sklearn.decomposition import PCA
 import numpy as np
 import matplotlib.pyplot as plt
-from pca.utils import read_datasets
+from anomaly_detection.pca.utils import read_datasets
 
 
 def plot_cumulative_explained_var(dataset):
