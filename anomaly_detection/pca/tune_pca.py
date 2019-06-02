@@ -68,8 +68,6 @@ def get_threshold(pca, components, conf):
     Ca = 1 - conf
     threshold = fi1 * np.power((1.0 * Ca * np.sqrt(2 * fi2 * (h0 ** 2)) / fi1)
                                + 1 + (1.0 * fi2 * h0 * (h0 - 1) / (fi1 ** 2)), 1.0 / h0)
-    # print
-    # fi1, fi2, fi3, h0, threshold
     return threshold
 
 
@@ -83,9 +81,8 @@ if __name__ == '__main__':
 
     # drop columns on all the 3 datasets
     pca_train_data1 = scaled_df1.select_dtypes(include=['float64']).drop(drop_columns, axis=1)
-    pca_train_data2 = scaled_df2.select_dtypes(include=['float64']).drop(drop_columns, axis=1)
-    pca_test_data = scaled_test_df.select_dtypes(include=['float64']).drop(drop_columns, axis=1)
+    pca_train_data1 = pca_train_data1[['P_J280', 'F_PU3', 'F_V2', 'P_J300', 'P_J289', 'L_T6', 'F_PU10']]
 
     plot_cumulative_explained_var(pca_train_data1)
     print('Number of components for explained variance {0} is {1}'.format(0.99, get_num_of_components(pca_train_data1,
-                                                                                                      explained_var=0.99)))
+                                                                                                      conf=0.99)))

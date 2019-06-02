@@ -30,7 +30,8 @@ def arma_detect():
     arma_test_data = scaled_test_df.drop(drop_columns, axis=1)
 
     # selected sensor names
-    sensors = arma_train_data1.columns.values
+    # sensors = arma_train_data1.columns.values
+    sensors = ['P_J280', 'F_PU3', 'F_V2', 'P_J300', 'P_J289', 'L_T6', 'F_PU10']
 
     # get the best p and q as decided by tune_arma.py
     with open("best_order.json", "r") as f:
@@ -40,8 +41,7 @@ def arma_detect():
 
     # with open('arma_all.pickle', 'wb') as handle:
     #     pickle.dump(all_predictions_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    # for sensor in sensors:
-    for sensor in ['L_T2']:
+    for sensor in sensors:
         # get p and q
         p = best_orders[sensor][0]
         q = best_orders[sensor][1]

@@ -88,7 +88,7 @@ def pca_detect():
     # plot attacks detected
     all_predictions = [1 if res > threshold else 0 for res in res_norm]
     plot_anomalies(y, all_predictions)
-    return predicted_anomalies
+    return all_predictions
 
 
 if __name__ == '__main__':
