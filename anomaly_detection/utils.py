@@ -1,6 +1,8 @@
 import itertools
 from sklearn.decomposition import PCA
 import numpy as np
+import matplotlib.dates as mdates
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
@@ -12,19 +14,25 @@ def read_datasets():
     :return: the 3 datasets and their labels
     """
     # read training 1 dataset
-    train_df1 = pd.read_csv('../BATADAL_datasets/BATADAL_training_dataset1.csv', index_col=0, parse_dates=[0],
+    if os.getcwd().split(os.sep)[-1] == 'anomaly_detection':
+        print(os.getcwd().split(os.sep)[-1])
+        cwd = '.'
+    else:
+        print(os.getcwd().split(os.sep)[-1])
+        cwd = '..'
+    train_df1 = pd.read_csv('{}/BATADAL_datasets/BATADAL_training_dataset1.csv'.format(cwd), index_col=0, parse_dates=[0],
                             date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
     scaled_df1, train_y1, scaler = scale_and_separate(train_df1)
 
     # read training 2 dataset
-    train_df2 = pd.read_csv('../BATADAL_datasets/BATADAL_training_dataset2.csv', index_col=0, parse_dates=[0],
+    train_df2 = pd.read_csv('{}/BATADAL_datasets/BATADAL_training_dataset2.csv'.format(cwd), index_col=0, parse_dates=[0],
                             date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
     train_df2.columns = train_df2.columns.str.lstrip()
     scaled_df2, _, _ = scale_and_separate(train_df2)
     scaled_df2, train_y2 = add_labels(scaled_df2, False)
 
     # read test dataset
-    test_df = pd.read_csv('../BATADAL_datasets/BATADAL_test_dataset.csv', index_col=0, parse_dates=[0],
+    test_df = pd.read_csv('{}/BATADAL_datasets/BATADAL_test_dataset.csv'.format(cwd), index_col=0, parse_dates=[0],
                           date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
     scaled_test_df, _, _ = scale_and_separate(test_df, labels=False, test=True, scaler=scaler)
 
@@ -167,22 +175,25 @@ def plot_anomalies(true_anomalies, predicted_anomalies, sensor=None, method='pca
     :param predicted_anomalies: Predicted attacks
     """
     fig, ax = plt.subplots()
-
-    # convert predicted_anomalies to pandas Series for plotting reasons
-    predicted_anomalies = pd.Series(predicted_anomalies, index=true_anomalies.index)
-
-    true_anomalies.plot(label='True', kind='line', color='black', ax=ax)
-    predicted_anomalies.plot(label='Predicted', kind='area', alpha=0.5, color='orange', ax=ax)
+    ax.fill_between(true_anomalies.index, true_anomalies, label='True', alpha=0.5)
+    ax.fill_between(true_anomalies.index, predicted_anomalies, label='Predicted', alpha=0.5)
+    ax.xaxis.set_major_locator(mdates.DayLocator([5, 10, 15, 20, 25, 30]))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
     ax.set_ylabel('Attacks')
+    ax.grid()
     plt.legend()
     if sensor:
-        plt.title('Predicted and true attacks for sensor {}'.format(sensor))
+        plt.title('Attacks for sensor {}'.format(sensor))
     else:
-        plt.title('Predicted and true attacks')
+        plt.title('Attacks')
     plt.xticks(rotation=45)
     plt.xlabel("Date")
-    if sensor:
-        plt.savefig('../plots/{}/{}_attacks_detected.png'.format(method, sensor), bbox_inches='tight')
+    if os.getcwd().split(os.sep)[-1] == 'anomaly_detection':
+        cwd = '.'
     else:
-        plt.savefig('../plots/{}/attacks_detected.png'.format(method), bbox_inches='tight')
-    # plt.show()
+        cwd = '..'
+
+    if sensor:
+        plt.savefig('{}/plots/{}/{}_attacks_detected.png'.format(cwd, method, sensor), bbox_inches='tight')
+    else:
+        plt.savefig('{}/plots/{}/attacks_detected.png'.format(cwd, method), bbox_inches='tight')

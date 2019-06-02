@@ -22,8 +22,8 @@ def pca_detect():
     pca_test_data = scaled_test_df.drop(drop_columns, axis=1)
 
     # apply PCA on training dataset 1
-    components = get_num_of_components(pca_train_data1, 0.99)  # determine the number of PCA components
-    pca = PCA(n_components=components)
+    # components = get_num_of_components(pca_train_data1, 0.99)  # determine the number of PCA components
+    pca = PCA(n_components=pca_train_data1.shape[1])
     pca.fit(pca_train_data1)
     # compute residuals
     residuals = pca_train_data1 - pca.inverse_transform(pca.transform(pca_train_data1))
@@ -39,7 +39,7 @@ def pca_detect():
     thresh_handle = plt.plot_date([res_norm.index[0], res_norm.index[-1]], [threshold, threshold], fmt='-', color='r')
     plt.ylabel("Square Prediction Error")
     plt.xlabel("Observation")
-    plt.title("Application of PCA to training data with " + str(components) + " normal components")
+    plt.title("Application of PCA to training data with " + str(pca_train_data1.shape[1]) + " normal components")
     plt.legend([thresh_handle], ["Sample threshold"])
     plt.savefig('../plots/pca/train_outliers.png', bbox_inches='tight')
     # plt.show()
@@ -49,8 +49,8 @@ def pca_detect():
 
     # we use training dataset 2 to find the optimal classification threshold
     pca = PCA(n_components=pca_train_data2.shape[1])
-    pca.fit(pca_train_data1_without_outliers)
-    components_dataset2 = get_num_of_components(pca_train_data1_without_outliers, 0.95)
+    pca.fit(pca_train_data2)
+    components_dataset2 = get_num_of_components(pca_train_data2, 0.95)
     threshold = get_threshold(pca, components_dataset2, conf=0.95)
 
     # another way to get a threshold
@@ -60,6 +60,7 @@ def pca_detect():
     # threshold = np.max(total_errors) # computed classification threshold
 
     # apply PCA for test dataset
+    components = get_num_of_components(pca_train_data1_without_outliers, 0.99)  # determine the number of PCA components
     pca = PCA(n_components=components)
     pca.fit(pca_train_data1_without_outliers)
     residuals = pca_test_data - pca.inverse_transform(pca.transform(pca_test_data))

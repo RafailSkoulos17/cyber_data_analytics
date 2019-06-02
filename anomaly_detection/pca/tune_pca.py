@@ -37,7 +37,7 @@ def get_num_of_components(dataset, conf):
     """
     # apply pca for the maximum number of features
 
-    pca = PCA(n_components=31)
+    pca = PCA(n_components=dataset.shape[1])
     pca.fit(dataset)
 
     # compute cumulative explained variance as the components are increasing
@@ -81,7 +81,6 @@ if __name__ == '__main__':
 
     # drop columns on all the 3 datasets
     pca_train_data1 = scaled_df1.select_dtypes(include=['float64']).drop(drop_columns, axis=1)
-    pca_train_data1 = pca_train_data1[['P_J280', 'F_PU3', 'F_V2', 'P_J300', 'P_J289', 'L_T6', 'F_PU10']]
 
     plot_cumulative_explained_var(pca_train_data1)
     print('Number of components for explained variance {0} is {1}'.format(0.99, get_num_of_components(pca_train_data1,

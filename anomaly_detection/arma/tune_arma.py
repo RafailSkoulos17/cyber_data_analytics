@@ -39,14 +39,15 @@ def tune_arma():
 
     # coluns to drop, status signals
     drop_columns = ['S_PU1', 'S_PU2', 'S_PU3', 'S_PU4', 'S_PU5', 'S_PU6', 'S_PU7', 'S_PU8', 'S_PU9', 'S_PU10', 'S_PU11',
-                    'S_V2'] + ['L_T1', 'L_T2', 'L_T3', 'L_T4', 'L_T5', 'L_T6', 'L_T7', 'F_PU1', 'F_PU2']
+                    'S_V2']
 
     # drop columns on all the 3 datasets
     train_data1 = scaled_df1.drop(drop_columns, axis=1)
     train_data2 = scaled_df2.drop(drop_columns, axis=1)
 
     # name of the sensors we use
-    sensors = train_data1.columns.values
+    # sensors = train_data1.columns.values
+    sensors = ['P_J280', 'F_PU3', 'F_V2', 'P_J300', 'P_J289', 'L_T6', 'F_PU10']
 
     results = {}
     for sensor in sensors:

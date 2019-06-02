@@ -92,7 +92,14 @@ def arma_detect():
 
         # get predictions according to the threshold
         all_predictions =  [1 if x > max_resid else 0 for i, x in enumerate(res)]
-
+        # find indices of anomalies
+        predicted_anomalies = np.where(all_predictions == 1)[0]
+        true_anomalies = np.where(y == 1)[0]
+        # get score
+        [tp, fp, fn, tn, tpr, tnr, Sttd, Scm, S] = get_score(predicted_anomalies, true_anomalies, y=y)
+        print('---------- {} ----------'.format(sensor))
+        print("TP: {0}, FP: {1}, TPR: {2}, TNR: {3}".format(tp, fp, tpr, tnr))
+        print("Sttd: {0}, Scm: {1}, S: {2}".format(Sttd, Scm, S))
         # plot residual for the selected sensor
         plot_anomalies(y, all_predictions, sensor, 'arma')
         all_predictions_dict[sensor] = all_predictions
