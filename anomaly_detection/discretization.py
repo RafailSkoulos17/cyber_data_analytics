@@ -4,7 +4,7 @@ import matplotlib.dates as mdates
 import numpy as np
 from saxpy.znorm import znorm
 from nltk import ngrams
-from anomaly_detection import sax
+import sax
 import pickle
 import warnings
 warnings.filterwarnings("ignore")

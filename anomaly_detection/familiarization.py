@@ -38,14 +38,15 @@ def make_heatmap(df, dataset, remove_constant=False):
     :return: creates and saves the correlation heatmap
     """
     sns.set(style="white")
+    temp_df = df.copy()
 
     # remove constant values
     if remove_constant:
-        constants = [x for x in df if np.std(df[x]) == 0]
-        df.drop(columns=constants, inplace=True)
+        constants = [x for x in temp_df if np.std(temp_df[x]) == 0]
+        temp_df.drop(columns=constants, inplace=True)
 
     # Compute the correlation matrix
-    corr = df.corr()
+    corr = temp_df.corr()
 
     # Set up the matplotlib figure
     f, ax = plt.subplots(figsize=(15, 10))
@@ -130,7 +131,7 @@ def use_AR(train1, train2, test, features):
         model_fit = AR(train1[feature]).fit()  # fit the AR model
         window = model_fit.k_ar  # retrieve the p value from the fitted model
         coeff = model_fit.params  # retrieve the coefficients
-        history = train1[feature][len(train1[feature]) - window:]  # create initial history
+        history = list(train1[feature][len(train1[feature]) - window:])  # create initial history
         predictions = predict_AR(train2[feature], history, window, coeff)  # make the predictions
         predictions.index = train2.index  # set the index properly
         error = mean_squared_error(train2[feature], predictions)  # calculate the MSE
@@ -155,7 +156,7 @@ def use_AR(train1, train2, test, features):
         model_fit = AR(train1[feature]).fit()  # fit the AR model
         window = model_fit.k_ar  # retrieve the p value from the fitted model
         coeff = model_fit.params  # retrieve the coefficients
-        history = train1[feature][len(train1[feature]) - window:]  # create initial history
+        history = list(train1[feature][len(train1[feature]) - window:])  # create initial history
         predictions = predict_AR(test[feature], history, window, coeff)  # make the predictions
         predictions.index = test.index  # set the index properly
         error = mean_squared_error(test[feature], predictions)  # calculate the MSE
@@ -180,7 +181,7 @@ def use_AR(train1, train2, test, features):
         model_fit = AR(train2[feature]).fit()  # fit the AR model
         window = model_fit.k_ar  # retrieve the p value from the fitted model
         coeff = model_fit.params  # retrieve the coefficients
-        history = train2[feature][len(train2[feature]) - window:]  # create initial history
+        history = list(train2[feature][len(train2[feature]) - window:])  # create initial history
         predictions = predict_AR(test[feature], history, window, coeff)  # make the predictions
         predictions.index = test.index  # set the index properly
         error = mean_squared_error(test[feature], predictions)  # calculate the MSE
@@ -239,7 +240,7 @@ if __name__ == '__main__':
     make_lineplot(train_df2, ['L_T1', 'S_PU1', 'S_PU2'], 'training2', '2016-10-01', '2016-11-10')
     make_lineplot(scaled_df2, ['L_T4', 'F_PU7'], 'training2', '2016-11-25', '2016-12-20')
 
-    # # test dataset with attacks from 04/01/17 00 to 01/04/17 00
+    # test dataset with attacks from 04/01/17 00 to 01/04/17 00
     print('Reading the test dataset...')
     test_df = pd.read_csv('BATADAL_datasets/BATADAL_test_dataset.csv', index_col=0, parse_dates=[0],
                           date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
