@@ -1,11 +1,9 @@
 import json
-import pickle
 import pandas as pd
-import matplotlib.pyplot as plt
 import statsmodels.api as sm
 import numpy as np
 import warnings
-from pca.utils import read_datasets, add_labels, scale_and_separate, get_blocks, get_score, plot_anomalies
+from utils import read_datasets, get_score, plot_anomalies
 
 warnings.filterwarnings("ignore")
 

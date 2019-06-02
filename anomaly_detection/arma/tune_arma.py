@@ -4,7 +4,7 @@ from statsmodels.tsa.stattools import pacf, acf
 import statsmodels.api as sm
 import numpy as np
 import warnings
-from pca.utils import read_datasets
+from utils import read_datasets
 
 warnings.filterwarnings("ignore")
 

@@ -1,6 +1,6 @@
 import pandas as pd
 from anomaly_detection.discretization import add_labels, confusion_results
-from anomaly_detection.pca.utils import get_score
+from utils import get_score
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt

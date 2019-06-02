@@ -2,7 +2,7 @@ from sklearn.decomposition import PCA
 import numpy as np
 import matplotlib.pyplot as plt
 from anomaly_detection.pca.tune_pca import get_num_of_components, get_threshold
-from anomaly_detection.pca.utils import read_datasets, get_score, plot_anomalies
+from utils import read_datasets, get_score, plot_anomalies
 import pickle
 import warnings
 warnings.filterwarnings("ignore")
