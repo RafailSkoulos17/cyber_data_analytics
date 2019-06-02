@@ -5,3 +5,24 @@ T3                : PU4, PU5
 T4                : PU6, PU7
 T5                : PU8
 T7                : PU10, PU11
+
+
+PLCs              : SENSORS + ACTUATORS
+PLC1              : PU1, PU2
+PLC2              : T1
+PLC3              : T2, V2, PU4, PU5, PU6, PU7
+PLC4              : T3
+PLC5              : PU8, PU9, PU10, PU11
+PLC6              : T4
+PLC7              : T5
+PLC8              : T6
+PLC9              : T7
+
+
+PUMPS + VALVES    : SUCTION PRESSURE    DISCHARGE PRESSURE
+PU2               : J280            	J269
+PU5               : J300            	J256
+PU6               : J289            	J415
+PU9               : J302            	J306
+PU10              : J307            	J317
+V2                : J14             	J422
