@@ -1,6 +1,7 @@
 import math
 import numpy as np
 
+# the breakpoints of the SAX method dependent on the alphabet length
 breakpoints = {'3': [-0.43, 0.43],
                '4': [-0.67, 0, 0.67],
                '5': [-0.84, -0.25, 0.25, 0.84],
@@ -23,10 +24,16 @@ breakpoints = {'3': [-0.43, 0.43],
                       1.25, 1.62],
                '20': [-1.64, -1.28, -1.04, -0.84, -0.67, -0.52, -0.39, -0.25, -0.13, 0, 0.13, 0.25, 0.39, 0.52, 0.67,
                       0.84, 1.04, 1.28, 1.64]
-}
+               }
 
 
 def alphabetize(paa_data, alphabet_size):
+    """
+    Function that convert each value of a PAA segment into a discrete value given the above breakpoints
+    :param paa_data: the PAA segments
+    :param alphabet_size: the length of the alphabet
+    :return: the discretized sequence
+    """
     alphabetized = ''
     beta = breakpoints[str(alphabet_size)]
     for i in range(0, len(paa_data)):
@@ -43,60 +50,49 @@ def alphabetize(paa_data, alphabet_size):
 
 
 def PAA(x, word_size):
+    """
+    Function that performs the PAA dimensionality reduction
+    :param x: the initial time series
+    :param word_size: the number of PAA segments to produce at the end
+    :return: the PAA segments along with the blocks that each segment represents
+    """
     n = len(x)
-    step_float = n / float(word_size)
-    step = int(math.ceil(step_float))
+    step_float = n / float(word_size)  # the float number of steps that are going to be compressed in each segment
+    step = int(math.ceil(step_float))  # and then it is turned into integer
     chunk_start = 0
     approximated = []
     indices = []
     i = 0
     while chunk_start <= n - step:
-        chunk = np.array(x[chunk_start:int(chunk_start + step)])
-        approximated.append(np.mean(chunk))
-        indices.append([chunk_start, int(chunk_start + step)])
+        chunk = np.array(x[chunk_start:int(chunk_start + step)])  # take each chunk of time steps
+        approximated.append(np.mean(chunk))  # and calculate the mean
+        indices.append([chunk_start, int(chunk_start + step)])  # and append the initial indices of the segment
         i += 1
-        chunk_start = int(i * step_float)
+        chunk_start = int(i * step_float)  # the start of the next segment
     return np.array(approximated), indices
 
 
 def to_letter_rep(data, word_size, alphabet_size):
+    """
+    Function that discretizes a data sequence using PAA dimensionality reduction and the SAX method
+    :param data: the sequential input data
+    :param word_size: the number of PAA segments to be produced
+    :param alphabet_size: the length of the alphabet
+    :return: the discretized signal along with the block indices of each PAA segment
+    """
     (paa_data, indices) = PAA(normalize(data), word_size)
     return alphabetize(paa_data, alphabet_size), indices
 
 
 def normalize(data, eps=1e-6):
+    """
+    Function that performs normalization on the data
+    :param data: the initial data
+    :param eps: a threshold set for the std of the data
+    :return: the normalized data
+    """
     x = np.asanyarray(data)
     if x.std() < eps:
         return [0]*len(x)
     else:
         return (x - x.mean()) / x.std()
-
-
-def sliding_window(data, window, move, word_size, alphabet_size):
-    ptr = 0
-    n = len(data)
-    window_indices = []
-    str_representation = []
-    while ptr < n-window+1:
-        chunk = data[ptr:ptr+window]
-        (chunk_str, indices) = to_letter_rep(chunk, word_size, alphabet_size)
-        str_representation.append(chunk_str)
-        window_indices.append((ptr, ptr+window))
-        ptr += move
-    return str_representation, window_indices
-
-
-def get_results(letter_to_rep_result):
-    numerical_sequence = letter_to_rep_result[0]
-    timestamps = letter_to_rep_result[1]
-
-    alphabet_list = []
-    time_list = []
-
-    datalength = len(numerical_sequence)
-
-    for i in np.arange(0, datalength):
-        alphabet_list.append(numerical_sequence[i])
-        time_list.append(timestamps[i][0])
-
-    return time_list, alphabet_list
