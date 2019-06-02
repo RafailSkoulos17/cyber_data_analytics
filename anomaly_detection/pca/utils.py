@@ -160,7 +160,7 @@ def get_score(indices_positive_prediction, indices_true_positive, y):
     return tp, fp, fn, tn, tpr, tnr, Sttd, Scm, S
 
 
-def plot_anomalies(true_anomalies, predicted_anomalies):
+def plot_anomalies(true_anomalies, predicted_anomalies, sensor=None, method='pca'):
     """
     Plots the predictes and true attacks
     :param true_anomalies: True attacks
@@ -175,8 +175,14 @@ def plot_anomalies(true_anomalies, predicted_anomalies):
     predicted_anomalies.plot(label='Predicted', kind='area', alpha=0.5, color='orange', ax=ax)
     ax.set_ylabel('Attacks')
     plt.legend()
-    plt.title('Attacks')
+    if sensor:
+        plt.title('Predicted and true attacks for sensor {}'.format(sensor))
+    else:
+        plt.title('Predicted and true attacks')
     plt.xticks(rotation=45)
     plt.xlabel("Date")
-    plt.savefig('../plots/pca/attacks_detected.png', bbox_inches='tight')
+    if sensor:
+        plt.savefig('../plots/{}/{}_attacks_detected.png'.format(method, sensor), bbox_inches='tight')
+    else:
+        plt.savefig('../plots/{}/attacks_detected.png'.format(method), bbox_inches='tight')
     # plt.show()

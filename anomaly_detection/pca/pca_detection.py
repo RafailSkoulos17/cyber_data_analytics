@@ -17,9 +17,9 @@ def pca_detect():
                     'S_V2']
 
     # drop columns on all the 3 datasets
-    pca_train_data1 = scaled_df1.select_dtypes(include=['float64']).drop(drop_columns, axis=1)
-    pca_train_data2 = scaled_df2.select_dtypes(include=['float64']).drop(drop_columns, axis=1)
-    pca_test_data = scaled_test_df.select_dtypes(include=['float64']).drop(drop_columns, axis=1)
+    pca_train_data1 = scaled_df1.drop(drop_columns, axis=1)
+    pca_train_data2 = scaled_df2.drop(drop_columns, axis=1)
+    pca_test_data = scaled_test_df.drop(drop_columns, axis=1)
 
     # apply PCA on training dataset 1
     components = get_num_of_components(pca_train_data1, 0.99)  # determine the number of PCA components
@@ -30,7 +30,7 @@ def pca_detect():
     res_norm = np.sqrt(np.square(residuals).sum(axis=1))
     # find threshold for outlier detection => mean + std
     threshold = np.mean(res_norm) + 3* np.std(res_norm)  # increase std*(2 or 3), increases TP by 30 and FP by 50
-    # threshold =1
+
     print('Threshold is {}'.format(threshold))
     # find outliers
     predicted_positives = np.where(res_norm > threshold)[0]
@@ -65,11 +65,11 @@ def pca_detect():
     residuals = pca_test_data - pca.inverse_transform(pca.transform(pca_test_data))
     res_norm = np.sqrt(np.square(residuals).sum(axis=1))
     # find indices of predicted and true positives
-    predicted_positives = np.where(res_norm > threshold)[0]
-    true_positives = np.where(y > 0)[0]
+    predicted_anomalies = np.where(res_norm > threshold)[0]
+    true_anomalies = np.where(y > 0)[0]
 
     # compute scores
-    [tp, fp, fn, tn, tpr, tnr, Sttd, Scm, S] = get_score(predicted_positives, true_positives, y=y)
+    [tp, fp, fn, tn, tpr, tnr, Sttd, Scm, S] = get_score(predicted_anomalies, true_anomalies, y=y)
 
     print("TP: {0}, FP: {1}, TPR: {2}, TNR: {3}".format(tp, fp, tpr, tnr))
     print("Sttd: {0}, Scm: {1}, S: {2}".format(Sttd, Scm, S))
@@ -86,8 +86,8 @@ def pca_detect():
     # plt.show()
 
     # plot attacks detected
-    predicted_anomalies = [1 if res > threshold else 0 for res in res_norm]
-    plot_anomalies(y, predicted_anomalies)
+    all_predictions = [1 if res > threshold else 0 for res in res_norm]
+    plot_anomalies(y, all_predictions)
     return predicted_anomalies
 
 
