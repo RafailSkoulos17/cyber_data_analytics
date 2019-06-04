@@ -15,10 +15,8 @@ def read_datasets():
     """
     # read training 1 dataset
     if os.getcwd().split(os.sep)[-1] == 'anomaly_detection':
-        print(os.getcwd().split(os.sep)[-1])
         cwd = '.'
     else:
-        print(os.getcwd().split(os.sep)[-1])
         cwd = '..'
     train_df1 = pd.read_csv('{}/BATADAL_datasets/BATADAL_training_dataset1.csv'.format(cwd), index_col=0, parse_dates=[0],
                             date_parser=lambda x: pd.to_datetime(x, format="%d/%m/%y %H"))
@@ -180,6 +178,7 @@ def plot_anomalies(true_anomalies, predicted_anomalies, sensor=None, method='pca
     ax.xaxis.set_major_locator(mdates.DayLocator([5, 10, 15, 20, 25, 30]))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
     ax.set_ylabel('Attacks')
+    plt.tight_layout()
     ax.grid()
     plt.legend()
     if sensor:

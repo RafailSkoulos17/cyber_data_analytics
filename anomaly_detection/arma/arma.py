@@ -91,10 +91,10 @@ def arma_detect():
         # res = np.abs(res - np.mean(res)) / np.std(res)
 
         # get predictions according to the threshold
-        all_predictions =  [1 if x > max_resid else 0 for i, x in enumerate(res)]
+        all_predictions = pd.Series([1 if x > max_resid else 0 for i, x in enumerate(res)], index=scaled_test_df.index)
         # find indices of anomalies
-        predicted_anomalies = np.where(all_predictions == 1)[0]
-        true_anomalies = np.where(y == 1)[0]
+        predicted_anomalies = np.where(all_predictions > 0)[0]
+        true_anomalies = np.where(y > 0)[0]
         # get score
         [tp, fp, fn, tn, tpr, tnr, Sttd, Scm, S] = get_score(predicted_anomalies, true_anomalies, y=y)
         print('---------- {} ----------'.format(sensor))
