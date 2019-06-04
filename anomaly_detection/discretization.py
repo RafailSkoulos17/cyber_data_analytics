@@ -99,7 +99,7 @@ def discretize_data(data, w, features, start_date, end_date, dataset, plotting):
     """
     alphabet = 5  # the length of the alphabet to be used
     # dictionaries used for plotting reasons
-    symbol_to_number = {'a': -1.5, 'b': -0.75, 'c': 0, 'd': 0.75, 'e': 1.5}
+    symbol_to_number = {'a': -1.5, 'b': -0.75, 'c': 0, 'd': 0.75, 'e': 1.5}  # just for visualization purposes
     number_to_symbol = {'0': 'a', '1': 'b', '2': 'c', '3': 'd', '4': 'e'}
     sax_seqs = {}
     sax_indices = {}
