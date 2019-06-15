@@ -3,7 +3,7 @@
 The implementation was done in Python 3.7.
 
 Each task of the assignment can be found in the relevant directory. 
-Also, for each one there is a ipynb file, where the flow is more clear.
+Also, for each one there is a ipynb file, where the flow is sound.
 
 All the required packages are included in the *requirements.txt* file.
 Note that for the last task *pytorch* and *pytorchvision* packages are required.
