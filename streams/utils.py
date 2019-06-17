@@ -13,7 +13,7 @@ def preprocess_data(filepath):
         lines = f.readlines()
     fout = open(filepath+'_v2', 'w')
     column_names = ['date', 'duration', 'protocol', 'src_ip', 'src_port', 'dst_ip', 'dst_port', 'flags',
-                    'tos', 'packet_bytes', 'flows', 'label', 'labels']
+                    'tos', 'packets', 'bytes', 'flows', 'label']
     fout.write(','.join(column_names))
     fout.write('\n')
     for line in lines[1:]:
@@ -38,5 +38,5 @@ def preprocess_data(filepath):
 
 
 if __name__ == '__main__':
-    data = read_data('scenario10/capture20110818.pcap.netflow.labeled')
+    data = preprocess_data('scenario10/capture20110818.pcap.netflow.labeled')
     print('scenario 10 read')
