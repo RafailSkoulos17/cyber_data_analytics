@@ -99,11 +99,6 @@ if __name__ == '__main__':
     # resetting indices for data
     data = data.reset_index(drop=True)
 
-    # replace the NAN values with zero
-    data['duration'] = data['duration'].fillna(0)
-    data['packets'] = data['packets'].fillna(0)
-    data['bytes'] = data['bytes'].fillna(0)
-
     # parse packets and bytes as integers instead of strings
     data['packets'] = data['packets'].astype(int)
     data['bytes'] = data['bytes'].astype(int)
