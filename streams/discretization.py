@@ -3,9 +3,19 @@ from functools import reduce
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
+warnings.filterwarnings("ignore")
 
 
-def netflow_encoding(df, flow, features):
+def netflow_encoding(flow, df, features):
+    """
+    The netflow encoding described in Pellegrino, Gaetano, et al. "Learning Behavioral Fingerprints From Netflows Using
+    Timed Automata."
+    :param flow: the flow to be given a code
+    :param df: the dataframe with all flows
+    :param features: the features to be used for encoding
+    :return: the code that represents the flow
+    """
     code = 0
     space_size = reduce((lambda x, y: x * y), [len(df[feature+'_num'].unique()) for feature in features])
     for feature in features:
@@ -15,6 +25,12 @@ def netflow_encoding(df, flow, features):
 
 
 def find_percentile(val, percentiles):
+    """
+    Helper function returning the relative index of placement in the percentiles
+    :param val: the value to be indexed
+    :param percentiles: the percentile limits
+    :return: the index of val in the percentiles
+    """
     ind = len(percentiles)
     for i, p in enumerate(percentiles):
         if val <= p:
@@ -45,6 +61,13 @@ if __name__ == '__main__':
 
     # if the data without the background are there, load them
     data = pd.read_pickle('no_background_data.pkl')
+    data = data.reset_index(drop=True)
+
+    # replace the NAN values with zero
+    data['duration'] = data['duration'].fillna(0)
+    data['tos'] = data['tos'].fillna(0)
+    data['packet_bytes'] = data['packet_bytes'].fillna(0)
+    data['flows'] = data['flows'].fillna(0)
 
     # add the numerical representation of the categorical data
     data['protocol_num'] = pd.Categorical(data['protocol'], categories=data['protocol'].unique()).codes
@@ -53,8 +76,12 @@ if __name__ == '__main__':
     infected_ip = '147.32.84.165'
     normal_ips = ['147.32.84.170', '147.32.84.134', '147.32.84.164', '147.32.87.36', '147.32.80.9', '147.32.87.11']
 
+    # currently using only source ips for infected and normal discrimination
     infected = data[data['src_ip'] == infected_ip]
+    infected = infected.reset_index()
+
     normal = data[data['src_ip'].isin(normal_ips)]
+    normal = normal.reset_index()
 
     # continuous features in the dataset
     continuous_features = ['duration', 'protocol_num', 'flags_num', 'tos', 'packet_bytes', 'flows']
@@ -64,6 +91,8 @@ if __name__ == '__main__':
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         print(infected[continuous_features].describe())
         print(normal[continuous_features].describe())
+
+    # TODO: add the visualization part
 
     # and select 2 of them
     selected_features = input('Enter the selected: ').split()
@@ -97,33 +126,18 @@ if __name__ == '__main__':
     normal = data[data['src_ip'].isin(normal_ips)]
 
     # discretize the flows
-    infected_encoded = []
-    for index, row in infected.iterrows():
-        infected_encoded.append(netflow_encoding(infected, row, selected_features))
+    infected['encoded'] = infected.apply(lambda x: netflow_encoding(x, infected, selected_features), axis=1)
+    normal['encoded'] = normal.apply(lambda x: netflow_encoding(x, normal, selected_features), axis=1)
+    data['encoded'] = data.apply(lambda x: netflow_encoding(x, data, selected_features), axis=1)
 
-    normal_encoded = []
-    for index, row in normal.iterrows():
-        normal_encoded.append(netflow_encoding(normal, row, selected_features))
-
-    all_encoded = []
-    for index, row in data.iterrows():
-        all_encoded.append(netflow_encoding(data, row, selected_features))
-
-    plt.figure()
-    plt.plot(infected_encoded, label='normal hosts')
-    plt.plot(normal_encoded, label='infected host')
-    plt.xlabel('records')
-    plt.ylabel('Code')
-    plt.legend()
-    plt.grid()
-    # plt.show()
-    plt.savefig('plots/discretized_flow_%s.png' % '_'.join(selected_features), bbox_inches='tight')
-
-    plt.figure()
-    plt.plot(all_encoded)
-    plt.xlabel('records')
-    plt.ylabel('Code')
-    plt.legend()
-    plt.grid()
-    # plt.show()
-    plt.savefig('plots/discretized_flow_all_%s.png' % '_'.join(selected_features), bbox_inches='tight')
+    infected.to_pickle('infected_discretized_%s.pkl' % '_'.join(selected_features))
+    normal.to_pickle('normal_discretized_%s.pkl' % '_'.join(selected_features))
+    data.to_pickle('all_discretized_%s.pkl' % '_'.join(selected_features))
+    # plt.figure()
+    # plt.plot(all_encoded)
+    # plt.xlabel('records')
+    # plt.ylabel('Code')
+    # plt.legend()
+    # plt.grid()
+    # # plt.show()
+    # plt.savefig('plots/discretized_flow_all_%s.png' % '_'.join(selected_features), bbox_inches='tight')
