@@ -6,8 +6,6 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
 from imblearn.over_sampling import SMOTE
-from imblearn.under_sampling import EditedNearestNeighbours
-from imblearn.combine import SMOTEENN
 import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
@@ -105,7 +103,7 @@ def create_clusters(x, y, ips):
     return clustered_x, clustered_y
 
 
-def make_clf(usx, usy, clf, clf_name, sampling, level):
+def make_clf(usx, usy, clf, clf_name, level):
     """
     Function for the classification task - Trains and tests the classifier clf using 10-fold cross-validation
     The sampling parameter sets the type of sampling to be used
@@ -113,11 +111,10 @@ def make_clf(usx, usy, clf, clf_name, sampling, level):
     :param usy: the labels of the instances
     :param clf: the classifier to be used
     :param clf_name: the name of the classifier (for plotting reasons)
-    :param sampling: the sampling method
     :param level: the evaluation level (for plotting reasons)
     :return: the classification results
     """
-    print('----------{} with {} at {} level ----------'.format(clf_name, sampling, level))
+    print('----------{} at {} level ----------'.format(clf_name, level))
     totalTP, totalFP, totalFN, totalTN = 0, 0, 0, 0
     j = 0
     skf = StratifiedKFold(n_splits=10, shuffle=True)  # TODO: not sure about shuffle
@@ -128,12 +125,7 @@ def make_clf(usx, usy, clf, clf_name, sampling, level):
         # train_ips = ips.iloc(train_index).reset_index()
         # test_ips = ips.iloc(test_index).reset_index()
 
-        if sampling == 'SMOTE':
-            x_train, y_train = SMOTE(sampling_strategy=0.3).fit_resample(x_train, y_train)
-        elif sampling == 'ENN':
-            x_train, y_train = EditedNearestNeighbours().fit_resample(x_train, y_train)
-        elif sampling == 'SMOTEENN':
-            x_train, y_train = SMOTEENN(sampling_strategy=0.3).fit_resample(x_train, y_train)
+        x_train, y_train = SMOTE(sampling_strategy=0.5).fit_resample(x_train, y_train)
 
         # create_clusters(x_train, y_train, train_ips)  # TODO: not fully implemented yet - decisions still to be made
 
@@ -182,8 +174,8 @@ if __name__ == '__main__':
 
     # set the classifiers
     clfs = {
-        'DecisionTreeClassifier': DecisionTreeClassifier(criterion='entropy', class_weight='balanced'),
-        'RandomForestClassifier': RandomForestClassifier(n_estimators=50, criterion='entropy', class_weight='balanced')
+        'DecisionTreeClassifier': DecisionTreeClassifier(criterion='gini', class_weight='balanced'),
+        'RandomForestClassifier': RandomForestClassifier(n_estimators=50, criterion='gini', class_weight='balanced')
     }
 
     # name the infected hosts
@@ -205,15 +197,7 @@ if __name__ == '__main__':
         x = final_data.drop(['src_ip', 'label'], axis=1).values
 
         print('start checking')
-        for smlp in ['SMOTE', 'ENN', 'SMOTEENN']:
-            for clf_name, clf in clfs.items():
-                usx = np.copy(x)
-                usy = np.copy(y)
-                make_clf(usx, usy, clf, clf_name, smlp, level)
-
-
-
-
-
-
-
+        for clf_name, clf in clfs.items():
+            usx = np.copy(x)
+            usy = np.copy(y)
+            make_clf(usx, usy, clf, clf_name, level)
