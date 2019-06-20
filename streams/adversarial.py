@@ -1,5 +1,5 @@
 import pandas as pd
-from random import randint, random
+from random import randint, random, sample
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -31,14 +31,17 @@ def make_adversarial(df, altered):
     new_df = df.copy()
     # first specify the number of adversarial flows to be constructed - currently 1% of the botnet data
     n = int(0.01*len(df[df['label'] == 'Botnet']))
-    for i in range(n):
-        ind = randint(0, new_df.shape[0]-2)
+    inds = sample(range(0, new_df.shape[0]-2), n)
+    new_dates = [new_df.index[ind] + random()*(new_df.index[ind+1]-new_df.index[ind]) for ind in inds]
+    new_flows = []
+    for ind, new_date in zip(inds, new_dates):
+        # ind = randint(0, new_df.shape[0]-2)
 
         # create a new date that does not already exist in the dataset
-        new_date = new_df.index[ind] + random()*(new_df.index[ind+1]-new_df.index[ind])
+        # new_date = new_df.index[ind] + random()*(new_df.index[ind+1]-new_df.index[ind])
 
         # create new flow
-        new_flow = []
+        new_flow = [new_date]
         new_flow += [new_df['duration'][ind]]  # duration
         new_flow += [new_df['protocol'][ind]]  # and protocol remain the same
         new_flow += [infected_ips[randint(0, 9)]]  # choose one of the botnet ips
@@ -53,8 +56,13 @@ def make_adversarial(df, altered):
         new_flow += ['Artificial']  # add the 'Artificial' label just for later plotting issues
 
         # TODO: check how to optimize it for memory
-        new_df.loc[new_date] = new_flow  # add the new flow to the dataset
-    return new_df
+        # new_df.loc[new_date] = new_flow  # add the new flow to the dataset
+        new_flows += [new_flow]
+    column_names = ['date']+list(new_df.columns.values)
+    adv_df = pd.DataFrame(new_flows, columns=column_names)
+    adv_df = adv_df.set_index(adv_df.date)
+    fin_df = pd.concat([new_df, adv_df])
+    return fin_df
 
 
 if __name__ == '__main__':
