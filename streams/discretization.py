@@ -13,7 +13,7 @@ def make_barplot(data, feature):
     """
     Function for visualising the difference between categorical features for infected and normal hosts
     :param data: the dataframe containing the data
-    :return: creates the wanted plot
+    :return:creates the wanted plot creates the wanted plot
     """
     plt.figure()
     feature_counts = (data.groupby(['is_infected'])[feature].value_counts(normalize=True).rename('percentage').mul(100)
@@ -29,6 +29,14 @@ def make_barplot(data, feature):
 
 
 def make_bar_graphs(x, y, feature):
+    """
+    Function for visualising the difference between numerical features (mainly packtes and bytes) for infected and
+    normal hosts
+    :param x: the type of the hosts
+    :param y: the numerical values
+    :param feature: the type of the feature
+    :return: creates the wanted plot
+    """
     plt.figure()
     y_pos = np.arange(len(x))
     plt.bar(y_pos, y, align='center', alpha=0.5, color=[mcolors.TABLEAU_COLORS['tab:blue'],
@@ -84,13 +92,12 @@ def remove_background(df):
 
 
 if __name__ == '__main__':
-    # # read the data in chunks due to their large size - uncomment this line if you want to read them again
+    # # read the data in chunks due to their large size - uncomment the following lines if you want to read them again
+    # # and store them in a pickle
     # dateparse = lambda x: pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f')
     # data = pd.concat(remove_background(chunk) for chunk in pd.read_csv('scenario10/capture20110818.pcap.netflow.labeled_v2',
     #                                                                    chunksize=100000, delimiter=',',
     #                                                                    parse_dates=['date'], date_parser=dateparse))
-
-    # # and store them in pickle
     # data.to_pickle('no_background_data.pkl')
 
     # if the data without the background are there, load them
@@ -107,6 +114,7 @@ if __name__ == '__main__':
     data['protocol_num'] = pd.Categorical(data['protocol'], categories=data['protocol'].unique()).codes
     data['flags_num'] = pd.Categorical(data['flags'], categories=data['flags'].unique()).codes
 
+    # pick one infected host and the normal ones
     infected_ip = '147.32.84.165'
     normal_ips = ['147.32.84.170', '147.32.84.134', '147.32.84.164', '147.32.87.36', '147.32.80.9', '147.32.87.11']
 
@@ -117,11 +125,11 @@ if __name__ == '__main__':
     normal = data[data['src_ip'].isin(normal_ips)]
     normal = normal.reset_index()
 
-    # continuous features in the dataset
+    # separate the types of features in the dataset
     continuous_features = ['duration', 'protocol_num', 'flags_num', 'tos', 'packets', 'bytes', 'flows']
     categorical_features = ['protocol', 'flags']
 
-    # check the most discriminative features in the dataset
+    # check statistics for the most discriminative features in the dataset
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         print('---------------- Stats for infected host ----------------')
         print(infected[continuous_features].describe())
@@ -140,7 +148,8 @@ if __name__ == '__main__':
     print('plots created')
 
     # and select 2 of them
-    selected_features = input('Enter the selected: ').split()
+    selected_features = input('Type two feature names for discretization\n '
+                              '(possible choices: duration, protocol, flags, tos, packets, bytes, flows): ').split()
 
     for sel in selected_features:
         if sel in continuous_features:
@@ -163,6 +172,8 @@ if __name__ == '__main__':
 
             percentile_num = int(input('Enter your preferred number of clusters: '))
 
+            # assign the cluster id to each value of the selected numerical feature in the way that it is described in
+            # in Pellegrino, Gaetano, et al. "Learning Behavioral Fingerprints From Netflows Using Timed Automata."
             percentile_values = list(map(lambda p: np.percentile(data[sel], p), 100*np.arange(0, 1, 1 / percentile_num)[1:]))
             data[sel+'_num'] = data[sel].apply(find_percentile, args=(percentile_values,))
 
