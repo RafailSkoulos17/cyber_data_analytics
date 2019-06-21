@@ -3,7 +3,9 @@ from random import randint, random, sample
 import warnings
 warnings.filterwarnings("ignore")
 
-
+# The usage of these perturbation steps and types are inspired from Apruzzese, Giovanni, and Michele Colajanni.
+# "Evading Botnet Detectors Based on Flows and Random Forest with Adversarial Samples." 2018 IEEE 17th International
+# Symposium on Network Computing and Applications (NCA). IEEE, 2018.
 perturbation_steps = {
     1: {'packets': 1, 'bytes': 1},
     2: {'packets': 2, 'bytes': 2},

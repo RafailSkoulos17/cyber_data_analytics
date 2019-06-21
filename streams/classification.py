@@ -256,6 +256,8 @@ if __name__ == '__main__':
     for level in eval_levels:
         # prepare the data according to the level
         final_data = bclus_data.copy()
+
+        # check if the adversarial flag is on, and if it is, load and process the adversarial handcrafted data
         if adversarial:
             final_test_data = bclus_test_data.copy()
         if level == 'host':
@@ -263,10 +265,12 @@ if __name__ == '__main__':
             if adversarial:
                 final_test_data = final_test_data.groupby('src_ip').sum().reset_index()
 
+        # label the processed dataset(s)
         final_data['label'] = final_data['src_ip'].apply(lambda z: check_infected(z, infected_ips))
         if adversarial:
             final_test_data['label'] = final_test_data['src_ip'].apply(lambda z: check_infected(z, infected_ips))
 
+        # separate the labels from the rest of the dataset
         y = final_data['label'].values
         x = final_data.drop(['src_ip', 'label'], axis=1).values
 
@@ -274,7 +278,8 @@ if __name__ == '__main__':
             y_test = final_test_data['label'].values
             x_test = final_test_data.drop(['src_ip', 'label'], axis=1).values
 
-        print('start checking')
+        # enter the classification phase
+        print('Start the classification process')
         for clf_name, clf in clfs.items():
             usx = np.copy(x)
             usy = np.copy(y)
