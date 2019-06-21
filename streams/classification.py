@@ -157,17 +157,17 @@ def make_clf(usx, usy, clf, clf_name, level):
 
 if __name__ == '__main__':
     # if the data without the background are there, load them (again data from scenario 10 were used)
-    data = pd.read_pickle('no_background_data.pkl')
-
+    # data = pd.read_pickle('no_background_data.pkl')
+    data = pd.read_pickle('adversarial_examples/altered_packets_bytes_step_9.pkl')
     # resetting indices for data
-    data = data.reset_index(drop=True)
+    # data = data.reset_index(drop=True)
 
     # parse packets and bytes as integers instead of strings
     data['packets'] = data['packets'].astype(int)
     data['bytes'] = data['bytes'].astype(int)
 
     # set date as index in the dataframe
-    data = data.set_index(data.date)
+    # data = data.set_index(data.date)
 
     # Create BClus dataset
     bclus_data = create_BClus(data)
@@ -180,7 +180,8 @@ if __name__ == '__main__':
 
     # name the infected hosts
     infected_ips = ['147.32.84.165', '147.32.84.191', '147.32.84.192', '147.32.84.193', '147.32.84.204',
-                    '147.32.84.205', '147.32.84.206', '147.32.84.207', '147.32.84.208', '147.32.84.209']
+                    '147.32.84.205', '147.32.84.206', '147.32.84.207', '147.32.84.208', '147.32.84.209'] + \
+                   ['192.168.178.21', '192.168.173.21', '192.168.171.21', '192.168.174.21', '192.168.180.21']
 
     # enter the classification phase for each level
     eval_levels = ['packet', 'host']  # the 2 evaluation levels

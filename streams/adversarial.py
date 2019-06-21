@@ -23,14 +23,17 @@ perturbation_types = {
 }
 
 
-infected_ips = ['147.32.84.165', '147.32.84.191', '147.32.84.192', '147.32.84.193', '147.32.84.204',
-                '147.32.84.205', '147.32.84.206', '147.32.84.207', '147.32.84.208', '147.32.84.209']
+infected_ips = ['192.168.178.21', '192.168.173.21', '192.168.171.21', '192.168.174.21', '192.168.180.21']
+
+dest_ips = ['147.32.84.165', '147.32.84.191', '147.32.84.192', '147.32.84.193', '147.32.84.204',
+            '147.32.84.205', '147.32.84.206', '147.32.84.207', '147.32.84.208', '147.32.84.209',
+            '147.32.84.170', '147.32.84.134', '147.32.84.164', '147.32.87.36', '147.32.80.9', '147.32.87.11']
 
 
 def make_adversarial(df, altered):
     new_df = df.copy()
     # first specify the number of adversarial flows to be constructed - currently 1% of the botnet data
-    n = int(0.01*len(df[df['label'] == 'Botnet']))
+    n = int(0.005*len(df[df['label'] == 'Botnet']))
     inds = sample(range(0, new_df.shape[0]-2), n)
     new_dates = [new_df.index[ind] + random()*(new_df.index[ind+1]-new_df.index[ind]) for ind in inds]
     new_flows = []
@@ -43,10 +46,12 @@ def make_adversarial(df, altered):
         # create new flow
         new_flow = [new_date]
         new_flow += [new_df['duration'][ind]]  # duration
-        new_flow += [new_df['protocol'][ind]]  # and protocol remain the same
-        new_flow += [infected_ips[randint(0, 9)]]  # choose one of the botnet ips
+        # new_flow += [new_df['protocol'][ind]]  # and protocol remain the same
+        new_flow += ['TCP']  # and protocol remain the same
+        new_flow += [infected_ips[randint(0, 4)]]  # choose one of the botnet ips
         new_flow += [new_df['src_port'][ind]]  # source port
-        new_flow += [new_df['dst_ip'][ind]]  # destination ip
+        # new_flow += [new_df['dst_ip'][ind]]  # destination ip
+        new_flow += [dest_ips[randint(0, 15)]]  # choose one of the botnet ips
         new_flow += [new_df['dst_port'][ind]]  # destination port
         new_flow += [new_df['flags'][ind]]  # flags
         new_flow += [new_df['tos'][ind]]  # and tos remain the same
@@ -90,4 +95,4 @@ if __name__ == '__main__':
             for type in perturbation_types[types]:
                 to_be_altered[type] = perturbation_steps[step][type]
             adv_df = make_adversarial(data, to_be_altered)
-            adv_df.to_pickle('altered_%s_step_%d.pkl' % ('_'.join(perturbation_types[types]), step))
+            adv_df.to_pickle('adversarial_examples/altered_%s_step_%d.pkl' % ('_'.join(perturbation_types[types]), step))
