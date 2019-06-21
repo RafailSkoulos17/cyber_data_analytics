@@ -67,8 +67,8 @@ def make_adversarial_v1(df, altered):
         new_flow += [new_df['dst_port'][ind]]  # destination port
         new_flow += [new_df['flags'][ind]]  # flags
         new_flow += [new_df['tos'][ind]]  # and tos remain the same
-        new_flow += [new_df['packets'][ind] + 0 if 'packets' not in altered.keys() else altered['packets']]  # alter packets
-        new_flow += [new_df['bytes'][ind] + 0 if 'bytes' not in altered.keys() else altered['bytes']]  # alter bytes
+        new_flow += [new_df['packets'][ind] + (0 if 'packets' not in altered.keys() else altered['packets'])]  # alter packets
+        new_flow += [new_df['bytes'][ind] + (0 if 'bytes' not in altered.keys() else altered['bytes'])]  # alter bytes
         new_flow += [new_df['flows'][ind]]  # flow remains the same
         new_flow += ['Artificial']  # add the 'Artificial' label just for later plotting issues
         new_flows += [new_flow]
@@ -96,8 +96,8 @@ def make_adversarial_v2(df, altered):
     new_df = new_df[new_df['label'] != 'Botnet']  # and remove them from the original dataset
 
     # alter the packets or (and) the bytes according ot the values of the altered dictionary
-    botnets['packets'] = botnets['packets'].apply(lambda z: z + 0 if 'packets' not in altered.keys() else altered['packets'])
-    botnets['bytes'] = botnets['bytes'].apply(lambda z: z + 0 if 'bytes' not in altered.keys() else altered['bytes'])
+    botnets['packets'] = botnets['packets'].apply(lambda z: z + (0 if 'packets' not in altered.keys() else altered['packets']))
+    botnets['bytes'] = botnets['bytes'].apply(lambda z: z + (0 if 'bytes' not in altered.keys() else altered['bytes']))
 
     # and concatenate the new botnet flows with the original dataset with the original dataset
     fin_df = pd.concat([new_df, botnets])

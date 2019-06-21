@@ -236,7 +236,7 @@ if __name__ == '__main__':
 
     # adversarial part for task 6
     if adversarial:
-        test_data = pd.read_pickle('adversarial_examples/altered_packets_bytes_step_2.pkl')
+        test_data = pd.read_pickle('adversarial_examples/altered_bytes_step_9.pkl')
         test_data['packets'] = test_data['packets'].astype(int)
         test_data['bytes'] = test_data['bytes'].astype(int)
         bclus_test_data = create_BClus(test_data)
