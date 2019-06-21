@@ -148,7 +148,7 @@ if __name__ == '__main__':
     print('plots created')
 
     # and select 2 of them
-    selected_features = input('Type two feature names for discretization\n '
+    selected_features = input('Type two feature names for discretization separated by space\n '
                               '(possible choices: duration, protocol, flags, tos, packets, bytes, flows): ').split()
 
     for sel in selected_features:
@@ -177,31 +177,11 @@ if __name__ == '__main__':
             percentile_values = list(map(lambda p: np.percentile(data[sel], p), 100*np.arange(0, 1, 1 / percentile_num)[1:]))
             data[sel+'_num'] = data[sel].apply(find_percentile, args=(percentile_values,))
 
-    # reselect the data
-    infected = data[data['src_ip'] == infected_ip]
-    infected = infected.reset_index()
-    normal = data[data['src_ip'].isin(normal_ips)]
-    normal = normal.reset_index()
-
-    # discretize the infected flows
-    print('Discretizing the infected host...')
-    mappings = {}
-    for sel_feat in selected_features:
-        mappings[sel_feat] = len(infected[sel_feat+'_num'].unique())
-
-    infected['encoded'] = infected.apply(lambda x: netflow_encoding(x, mappings), axis=1)
-    infected.to_pickle('discretized_data/infected_discretized_%s.pkl' % '_'.join(selected_features))
-
-    print('Discretizing the normal hosts...')
-    mappings = {}
-    for sel_feat in selected_features:
-        mappings[sel_feat] = len(normal[sel_feat + '_num'].unique())
-    normal['encoded'] = normal.apply(lambda x: netflow_encoding(x, mappings), axis=1)
-    normal.to_pickle('discretized_data/normal_discretized_%s.pkl' % '_'.join(selected_features))
-
+    # discretize all flows
     print('Discretizing all hosts...')
     mappings = {}
     for sel_feat in selected_features:
         mappings[sel_feat] = len(data[sel_feat + '_num'].unique())
     data['encoded'] = data.apply(lambda x: netflow_encoding(x, mappings), axis=1)
     data.to_pickle('discretized_data/all_discretized_%s.pkl' % '_'.join(selected_features))
+    print('Discretization completed')

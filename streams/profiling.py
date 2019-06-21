@@ -9,11 +9,11 @@ def get_windows(data, window_size):
     # create sliding window data
     win_data = np.zeros((size, window_size), dtype=np.int32)
     for i in range(size):
-        win_data[i] = np.array([flow for flow in data['encoded'][i:i + window_size]])
+        win_data[i] = np.array([flow for flow in data['encoded'].iloc[i:i + window_size]])
     return win_data
 
 
-def fit_and_apply_hmm(normal, infected, chosen):
+def fit_and_apply_hmm(normal, infected, chosen, data):
     # define sliding window size
     win = 5
 
@@ -82,7 +82,6 @@ def classify(hosts_log_likelihood, normal, infected, modeled_log_likelihood):
         if i in infected:
             TP += 1
         else:
-            print(i)
             FP += 1
 
     # evaluate all potentially benign hosts
@@ -92,7 +91,10 @@ def classify(hosts_log_likelihood, normal, infected, modeled_log_likelihood):
         else:
             FN += 1
 
-    precision = TP / (TP + FP)
+    if not (TP + FP):
+        precision = 1
+    else:
+        precision = TP / (TP + FP)
     recall = TP / (TP + FN)
     accuracy = (TP + TN) / (TP + TN + FP + FN)
     print('True Positives : {}'.format(TP))
@@ -102,6 +104,7 @@ def classify(hosts_log_likelihood, normal, infected, modeled_log_likelihood):
     print('Precision: {}'.format(precision))
     print('Recall: {}'.format(recall))
     print('Accuracy: {}'.format(accuracy))
+    return recall  # for task 6
 
 
 if __name__ == '__main__':
@@ -117,5 +120,5 @@ if __name__ == '__main__':
     infected = ['147.32.84.191', '147.32.84.192', '147.32.84.193', '147.32.84.204', '147.32.84.205',
                 '147.32.84.206', '147.32.84.207', '147.32.84.208', '147.32.84.209']
 
-    hosts_log_likelihood, modeled_log_likelihood = fit_and_apply_hmm(normal, infected, chosen)
+    hosts_log_likelihood, modeled_log_likelihood = fit_and_apply_hmm(normal, infected, chosen, data)
     classify(hosts_log_likelihood, normal, infected, modeled_log_likelihood)
