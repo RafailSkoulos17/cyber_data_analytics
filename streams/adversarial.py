@@ -184,16 +184,8 @@ if __name__ == '__main__':
             normal_ips = ['147.32.84.170', '147.32.84.134', '147.32.84.164', '147.32.87.36', '147.32.80.9',
                           '147.32.87.11']
 
-            # currently using only source ips for infected and normal discrimination
-            infected = adv_df[adv_df['src_ip'] == infected_ip]
-            infected = infected.reset_index()
-
-            normal = adv_df[adv_df['src_ip'].isin(normal_ips)]
-            normal = normal.reset_index()
-
-            # separate the types of features in the dataset
+            # list the continuous types of features in the dataset
             continuous_features = ['duration', 'protocol_num', 'flags_num', 'tos', 'packets', 'bytes', 'flows']
-            categorical_features = ['protocol', 'flags']
 
             # and select the features that were selected for the profiling task with same number of bins as before
             selected_features = ['protocol', 'bytes']
@@ -222,20 +214,28 @@ if __name__ == '__main__':
             step_results_profiling += [recall]
 
         results_classification_packet += [step_results_classification_packet]
-        results_classification_host = [step_results_classification_host]
-        results_profiling = [step_results_profiling]
+        results_classification_host += [step_results_classification_host]
+        results_profiling += [step_results_profiling]
 
     # store the final results into dataframe for better visualization and print them
     headers = ['step 1', 'step 2', 'step 3', 'step 4', 'step 5']
 
+    results_classification_packet = [[prt] + row for row, prt in
+                                     zip(results_classification_packet, list(perturbation_types.values()))]
     results_classification_packet_df = pd.DataFrame(results_classification_packet, columns=headers)
+    results_classification_packet_df.set_index('types', inplace=True)
     print('--------- Flow classification results for packet level ---------')
     print(results_classification_packet_df)
 
+    results_classification_host = [[prt] + row for row, prt in
+                                   zip(results_classification_host, list(perturbation_types.values()))]
     results_classification_host_df = pd.DataFrame(results_classification_host, columns=headers)
+    results_classification_host_df.set_index('types', inplace=True)
     print('--------- Flow classification results for host level ---------')
     print(results_classification_host_df)
 
+    results_profiling = [[prt] + row for row, prt in zip(results_profiling, list(perturbation_types.values()))]
     results_profiling_df = pd.DataFrame(results_profiling, columns=headers)
+    results_profiling_df.set_index('types', inplace=True)
     print('--------- Profiling results ---------')
     print(results_profiling_df)
