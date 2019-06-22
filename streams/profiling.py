@@ -1,3 +1,5 @@
+import math
+
 from hmmlearn.hmm import GaussianHMM
 import pandas as pd
 import numpy as np
@@ -13,20 +15,39 @@ def get_windows(data, window_size):
     return win_data
 
 
+def find_optimal_params(chosen):
+    max_ll = -math.inf
+    optimal_win = 0
+    optimal_components = 0
+    for comp in range(2, 7):
+        for win in range(2, 11):
+            win_data = get_windows(chosen, win)
+            hmm = GaussianHMM(n_components=comp)
+            hmm.fit(win_data)
+            log_likelihood = hmm.decode(win_data)[0]
+            if log_likelihood > max_ll:
+                max_ll = log_likelihood
+                optimal_win = win
+                optimal_components = comp
+            print('Window=%d ,Components=%d, Log-likelihood=%.3f' % (win, comp, log_likelihood))
+    print('Optimal values: Window=%d, Components=%d' % (optimal_win, optimal_components))
+    return optimal_win, optimal_components
+
+
 def fit_and_apply_hmm(normal, infected, chosen, data):
     # define sliding window size
-    win = 5
+    win, components = find_optimal_params(chosen)
 
     win_data = get_windows(chosen, win)
 
     # learn a Gaussian Hidden Markov Model with 4 states from the infected host data
-    hmm = GaussianHMM(n_components=4)
+    hmm = GaussianHMM(n_components=components)
     hmm.fit(win_data)
     # store the log-likelihood of the host that trained the model
     modeled_log_likelihood = hmm.decode(win_data)[0]
 
     hosts_log_likelihood = {}
-    win = 5
+
     # compute log-likelihood of data sequence of normal IPs
     for ip in normal:
         # get the flows of that host only
@@ -97,14 +118,7 @@ def classify(hosts_log_likelihood, normal, infected, modeled_log_likelihood):
         precision = TP / (TP + FP)
     recall = TP / (TP + FN)
     accuracy = (TP + TN) / (TP + TN + FP + FN)
-    print('True Positives : {}'.format(TP))
-    print('False Positives : {}'.format(FP))
-    print('True Negatives : {}'.format(TN))
-    print('False Negatives : {}'.format(FN))
-    print('Precision: {}'.format(precision))
-    print('Recall: {}'.format(recall))
-    print('Accuracy: {}'.format(accuracy))
-    return recall  # for task 6
+    return recall, precision, accuracy, TP, FP, TN, FN  # for task 6
 
 
 if __name__ == '__main__':
@@ -121,4 +135,12 @@ if __name__ == '__main__':
                 '147.32.84.206', '147.32.84.207', '147.32.84.208', '147.32.84.209']
 
     hosts_log_likelihood, modeled_log_likelihood = fit_and_apply_hmm(normal, infected, chosen, data)
-    classify(hosts_log_likelihood, normal, infected, modeled_log_likelihood)
+    recall, precision, accuracy, TP, FP, TN, FN = classify(hosts_log_likelihood, normal, infected,
+                                                           modeled_log_likelihood)
+    print('True Positives : {}'.format(TP))
+    print('False Positives : {}'.format(FP))
+    print('True Negatives : {}'.format(TN))
+    print('False Negatives : {}'.format(FN))
+    print('Precision: {}'.format(precision))
+    print('Recall: {}'.format(recall))
+    print('Accuracy: {}'.format(accuracy))
