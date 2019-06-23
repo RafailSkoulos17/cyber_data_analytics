@@ -9,6 +9,10 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
+infected_ips = ['147.32.84.165', '147.32.84.191', '147.32.84.192', '147.32.84.193', '147.32.84.204',
+                '147.32.84.205', '147.32.84.206', '147.32.84.207', '147.32.84.208', '147.32.84.209']
+
+
 def make_barplot(data, feature):
     """
     Function for visualising the difference between categorical features for infected and normal hosts
@@ -119,10 +123,11 @@ if __name__ == '__main__':
     normal_ips = ['147.32.84.170', '147.32.84.134', '147.32.84.164', '147.32.87.36', '147.32.80.9', '147.32.87.11']
 
     # currently using only source ips for infected and normal discrimination
-    infected = data[data['src_ip'] == infected_ip]
+    infected = data[(data['src_ip'] == infected_ip) | (data['dst_ip'] == infected_ip)]
     infected = infected.reset_index()
 
-    normal = data[data['src_ip'].isin(normal_ips)]
+    normal= data[(data['src_ip'].isin(normal_ips) & ~data['dst_ip'].isin(infected_ips)) |
+                  (data['dst_ip'].isin(normal_ips) & ~data['src_ip'].isin(infected_ips))]
     normal = normal.reset_index()
 
     # separate the types of features in the dataset
