@@ -29,14 +29,18 @@ def find_optimal_params(chosen):
                 max_ll = log_likelihood
                 optimal_win = win
                 optimal_components = comp
-            print('Window=%d ,Components=%d, Log-likelihood=%.3f' % (win, comp, log_likelihood))
-    print('Optimal values: Window=%d, Components=%d' % (optimal_win, optimal_components))
+            # uncomment to see the log-likelihood for each configuration
+            # print('Window=%d ,Components=%d, Log-likelihood=%.3f' % (win, comp, log_likelihood))
+    print('Profiling: Optimal HMM values: Window=%d, Components=%d' % (optimal_win, optimal_components))
     return optimal_win, optimal_components
 
 
 def fit_and_apply_hmm(normal, infected, chosen, data):
-    # define sliding window size
-    win, components = find_optimal_params(chosen)
+    # define sliding window size and number of components
+    win, components = 4, 5
+    # uncomment the next line to find the optimal window size and number of components
+    # it takes some time though...
+    # win, components = find_optimal_params(chosen)
 
     win_data = get_windows(chosen, win)
 
