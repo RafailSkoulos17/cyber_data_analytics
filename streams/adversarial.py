@@ -220,21 +220,22 @@ if __name__ == '__main__':
     # store the final results into dataframe for better visualization and print them
     headers = ['types', 'step 1', 'step 2', 'step 3', 'step 4', 'step 5']
 
-    results_classification_packet = [prt + row for row, prt in
+    results_classification_packet = [[' & '.join(prt)] + row for row, prt in
                                      zip(results_classification_packet, list(perturbation_types.values()))]
     results_classification_packet_df = pd.DataFrame(results_classification_packet, columns=headers)
     results_classification_packet_df.set_index('types', inplace=True)
     print('--------- Flow classification results for packet level ---------')
     print(results_classification_packet_df)
 
-    results_classification_host = [prt + row for row, prt in
+    results_classification_host = [[' & '.join(prt)] + row for row, prt in
                                    zip(results_classification_host, list(perturbation_types.values()))]
     results_classification_host_df = pd.DataFrame(results_classification_host, columns=headers)
     results_classification_host_df.set_index('types', inplace=True)
     print('--------- Flow classification results for host level ---------')
     print(results_classification_host_df)
 
-    results_profiling = [prt + row for row, prt in zip(results_profiling, list(perturbation_types.values()))]
+    results_profiling = [[' & '.join(prt)] + row for row, prt
+                         in zip(results_profiling, list(perturbation_types.values()))]
     results_profiling_df = pd.DataFrame(results_profiling, columns=headers)
     results_profiling_df.set_index('types', inplace=True)
     print('--------- Profiling results ---------')
