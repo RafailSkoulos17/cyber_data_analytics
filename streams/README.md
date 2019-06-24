@@ -11,7 +11,9 @@ Note that in some cases we use pickle files to load the data instead
 of extracting them again (the extraction code is commented),
 as it is time demanding. Also the parameters for the profiling task 
 with HMM are see manually, but can run the tuning function by 
-uncommenting it.
+uncommenting it. In addition, we couldn't upload the adversarial datasets
+because of their size. You can create them with bonus.py 
+or adversarial.ipynb.
 
 ### Important
 In order to run the code you should have the datasets for 
@@ -19,6 +21,7 @@ both scenarios 10 and 13. In particular, you should create a directory
 named *datasets* and add there the aforementioned datasets named 
 *CTU-Malware-Capture-Botnet-51* and *CTU-Malware-Capture-Botnet-54*
 respectively.
+
 
 
 
