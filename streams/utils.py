@@ -38,5 +38,5 @@ def preprocess_data(filepath):
 
 
 if __name__ == '__main__':
-    data = preprocess_data('scenario10/capture20110818.pcap.netflow.labeled')
+    data = preprocess_data('datasets/CTU-Malware-Capture-Botnet-51')
     print('scenario 10 read')

@@ -99,7 +99,7 @@ if __name__ == '__main__':
     # # read the data in chunks due to their large size - uncomment the following lines if you want to read them again
     # # and store them in a pickle
     # dateparse = lambda x: pd.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f')
-    # data = pd.concat(remove_background(chunk) for chunk in pd.read_csv('scenario10/capture20110818.pcap.netflow.labeled_v2',
+    # data = pd.concat(remove_background(chunk) for chunk in pd.read_csv('datasets/CTU-Malware-Capture-Botnet-51_v2',
     #                                                                    chunksize=100000, delimiter=',',
     #                                                                    parse_dates=['date'], date_parser=dateparse))
     # data.to_pickle('no_background_data.pkl')
