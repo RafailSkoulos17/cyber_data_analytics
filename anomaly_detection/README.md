@@ -9,4 +9,4 @@ All the required packages are included in the *requirements.txt* file.
 Note that for the last task *pytorch* and *pytorchvision* packages are required.
 All the required packages are installed automatically by running the first cell of the relative ipynb file.
 
-!! LSTM and ARMA models requires a significant amount of time to run.
+:exclamation: LSTM and ARMA models requires a significant amount of time to run.
